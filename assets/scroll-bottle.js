@@ -153,10 +153,24 @@ function getLabelGeometry() {
  * prewarmIncomingProduct en styles.js) reusen la misma textura ya cargada en vez de pedirla de
  * nuevo. Cada fragancia nueva agrega una entrada la primera vez que se pide. */
 const labelMaterialCache = new Map();
+
+/**
+ * Promesa, por URL, que se resuelve cuando la textura de esa etiqueta terminó de cargar (o falló).
+ *
+ * Arreglo del tema (2026-09-15), el bug ya estaba en el POC: la textura carga de forma asíncrona y
+ * una botella que no gira (createStaticProductCanvasElement en styles.js, la del modo desactivado)
+ * se dibuja una sola vez, así que la primera vez que se veía una fragancia colapsada la botella
+ * quedaba SIN etiqueta. Las que giran no lo notaban porque redibujan en cada frame. createBottle
+ * espera esta promesa y redibuja una vez más.
+ */
+const labelTextureReady = new Map();
+
 function getLabelMaterial(labelUrl) {
   let material = labelMaterialCache.get(labelUrl);
   if (!material) {
-    const texture = new THREE.TextureLoader().load(labelUrl);
+    let resolveReady;
+    labelTextureReady.set(labelUrl, new Promise((resolve) => { resolveReady = resolve; }));
+    const texture = new THREE.TextureLoader().load(labelUrl, resolveReady, undefined, resolveReady);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 8;
     material = new THREE.MeshStandardMaterial({
@@ -684,6 +698,11 @@ export function createBottle(canvas, options) {
     // Por si el hover + flecha ya habían pedido inclinar la botella antes de que cargara el modelo.
     rig.rotation.x = tiltAngle;
     draw();
+    // Ver labelTextureReady: redibuja cuando la etiqueta termina de cargar (si ya estaba cargada,
+    // la promesa ya está resuelta y es sólo un draw() de más).
+    labelTextureReady.get(labelUrl)?.then(() => {
+      if (!disposed) draw();
+    });
 
     if (pendingSpin) {
       const spinOptions = pendingSpin;
