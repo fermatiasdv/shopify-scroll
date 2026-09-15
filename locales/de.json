@@ -92,6 +92,7 @@
     "remove": "Entfernen",
     "view_in_your_space": "In deinem Raum ansehen",
     "show_filters": "Filtern",
+    "show_fragrances": "Düfte anzeigen",
     "clear": "Löschen",
     "continue_shopping": "Weiter einkaufen",
     "log_in_html": "Hast du ein Konto? <a href=\"{{ link }}\">Logge dich ein</a>, damit es beim Checkout schneller geht.",

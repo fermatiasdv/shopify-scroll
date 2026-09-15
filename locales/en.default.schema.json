@@ -339,6 +339,8 @@
     "layered_slideshow": "Layered slideshow",
     "logo": "Logo",
     "logo_and_favicon": "Logo and favicon",
+    // Home section with the 3D bottle and fragrance pagination
+    "fragrance_scroll": "Fragrance scroll",
     // Scrolling text/content component with horizontal animation
     "marquee": "Marquee",
     "marquee_section": "Marquee",

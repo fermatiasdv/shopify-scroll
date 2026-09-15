@@ -94,6 +94,7 @@
     "remove": "Pašalinti",
     "view_in_your_space": "Peržiūrėti savo erdvėje",
     "show_filters": "Filtruoti",
+    "show_fragrances": "Rodyti kvapus",
     "clear": "Išvalyti",
     "continue_shopping": "Tęsti apsipirkimą",
     "log_in_html": "Turite paskyrą? <a href=\"{{ link }}\">Prisijunkite</a> ir atsiskaitysite greičiau.",

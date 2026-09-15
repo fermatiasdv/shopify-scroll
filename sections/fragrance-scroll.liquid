@@ -1,0 +1,318 @@
+<script
+  src="{{ 'scroll-fragrance-scroll.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<link
+  rel="preconnect"
+  href="https://fonts.googleapis.com"
+>
+<link
+  rel="preconnect"
+  href="https://fonts.gstatic.com"
+  crossorigin
+>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap"
+>
+
+{%- liquid
+  assign label_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecstasy,epicurean,london_legend' | split: ','
+  assign first_background = 'scroll-bg-1.jpg' | asset_url
+-%}
+
+<fragrance-scroll class="fragrance-scroll">
+  <script type="application/json" data-fragrance-scroll-assets>
+    {
+      "model": {{ 'scroll-bottle.glb' | asset_url | json }},
+      "labels": {
+        "default": {{ 'scroll-bottle-label.png' | asset_url | json }}
+        {%- for slug in label_slugs -%}
+          {%- assign label_file = slug | remove: '_' | prepend: 'scroll-bottle-label-' | append: '.png' -%}
+          , {{ slug | json }}: {{ label_file | asset_url | json }}
+        {%- endfor %}
+      },
+      "backgrounds": [
+        {{ first_background | json }},
+        {{ 'scroll-bg-2.webp' | asset_url | json }},
+        {{ 'scroll-bg-3.webp' | asset_url | json }},
+        {{ 'scroll-bg-4.webp' | asset_url | json }}
+      ],
+      "ingredients": {
+        "painkiller": {{ 'scroll-ingredient-painkiller.png' | asset_url | json }},
+        "forbidden_flower": {{ 'scroll-ingredient-forbiddenflower.png' | asset_url | json }}
+      }
+    }
+  </script>
+
+  <div
+    class="fragrance-scroll__container"
+    style="background-image: url('{{ first_background }}');"
+  ></div>
+
+  <div class="fragrances-overlay">
+    <button
+      type="button"
+      class="fragrances-show-button"
+    >
+      {{ 'actions.show_fragrances' | t }}
+      <span
+        class="fragrances-show-arrow"
+        aria-hidden="true"
+        >&rarr;</span
+      >
+    </button>
+  </div>
+
+  <div
+    class="background-overlay"
+    aria-hidden="true"
+  ></div>
+
+  <button
+    type="button"
+    class="fragrances-close-button"
+    aria-label="{{ 'actions.close' | t }}"
+  >
+    <span aria-hidden="true">&#10005;</span>
+  </button>
+</fragrance-scroll>
+
+{% stylesheet %}
+  html.fragrance-scroll-animated,
+  html.fragrance-scroll-animated body,
+  html.fragrance-scroll-animated .page-wrapper {
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  .fragrance-scroll {
+    display: block;
+    position: relative;
+    width: 100%;
+    overflow: clip;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .fragrance-scroll__container {
+    width: 100%;
+    height: var(--fragrance-scroll-page-height, 100vh);
+    background-color: #1a0f08;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .fragrance-scroll-stage {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--fragrance-scroll-viewport-width, 100%);
+    z-index: calc(var(--layer-menu-drawer) + 1);
+    overflow: hidden;
+    isolation: isolate;
+    pointer-events: none;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  html:not(.fragrance-scroll-animated) .fragrance-scroll-stage,
+  html.fragrance-scroll-layers-hidden .fragrance-scroll-stage {
+    display: none;
+  }
+
+  .fragrance-scroll-stage .background-transition-layer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .fragrance-scroll-stage .background-transition-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity var(--fragrance-scroll-background-transition-ms) ease;
+  }
+
+  .fragrance-scroll .background-overlay {
+    display: none;
+  }
+
+  .fragrance-scroll-stage .background-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .fragrance-scroll-stage .display-layer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .fragrance-scroll .collapsed-box-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .fragrance-scroll .collapsed-box-content {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-item {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity var(--fragrance-scroll-label-transition-ms) ease,
+      transform var(--fragrance-scroll-label-transition-ms) ease;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-label {
+    color: #fff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.2rem, 4vw, 2.5rem);
+    line-height: normal;
+    text-shadow: 0 2px 8px rgb(0 0 0 / 0.55), 0 1px 2px rgb(0 0 0 / 0.65);
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-label-title {
+    font-size: var(--fragrance-scroll-title-font-size);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-label-ingredient {
+    font-size: var(--fragrance-scroll-ingredient-font-size);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-label-word {
+    display: inline-block;
+    opacity: 0;
+    transition: opacity var(--fragrance-scroll-word-fade-ms) ease;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-image {
+    width: auto;
+    height: auto;
+    max-width: 40vw;
+    max-height: 40vh;
+    object-fit: contain;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-image.display-image-product {
+    display: block;
+    max-width: none;
+    max-height: none;
+    pointer-events: auto;
+  }
+
+  :is(.fragrance-scroll, .fragrance-scroll-stage) .display-image-product[href] {
+    cursor: pointer;
+  }
+
+  .fragrance-scroll .fragrances-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8vh;
+    pointer-events: none;
+  }
+
+  .fragrance-scroll .fragrances-show-button {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.9rem 1.6rem;
+    border: none;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.75);
+    color: #fff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+
+  .fragrance-scroll .fragrances-show-arrow {
+    font-size: 1.2rem;
+    line-height: 1;
+    transform: translateY(-1px);
+  }
+
+  .fragrances-close-button {
+    display: none;
+  }
+
+  .fragrance-scroll-stage .fragrances-close-button {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.75);
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  html.fragrance-scroll-animated .fragrance-scroll .fragrances-overlay,
+  html.fragrance-scroll-layers-hidden .fragrance-scroll .fragrances-overlay {
+    display: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.fragrance_scroll",
+  "tag": "section",
+  "class": "fragrance-scroll-section",
+  "limit": 1,
+  "enabled_on": {
+    "templates": ["index"]
+  },
+  "settings": [],
+  "presets": [
+    {
+      "name": "t:names.fragrance_scroll",
+      "category": "t:categories.storytelling"
+    }
+  ]
+}
+{% endschema %}

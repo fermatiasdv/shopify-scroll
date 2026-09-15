@@ -92,6 +92,7 @@
     "remove": "Kaldır",
     "view_in_your_space": "Alanınızda görüntüleyin",
     "show_filters": "Filtrele",
+    "show_fragrances": "Kokuları göster",
     "clear": "Temizle",
     "continue_shopping": "Alışverişe devam et",
     "log_in_html": "Hesabınız var mı? Daha hızlı ödeme yapmak için <a href=\"{{ link }}\">oturum açın</a>.",

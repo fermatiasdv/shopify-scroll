@@ -93,6 +93,7 @@
     "remove": "Retirer",
     "view_in_your_space": "Voir dans votre espace",
     "show_filters": "Filtrer",
+    "show_fragrances": "Afficher les parfums",
     "clear": "Effacer",
     "continue_shopping": "Continuer vos achats",
     "log_in_html": "Vous possédez un compte ? <a href=\"{{ link }}\">Connectez-vous</a> pour payer plus vite.",

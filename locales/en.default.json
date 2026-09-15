@@ -103,6 +103,8 @@
       "other": "See {{ count }} items"
     },
     "show_filters": "Filter",
+    // Button on the fragrance scroll section that expands the full-screen fragrance viewer
+    "show_fragrances": "Show fragrances",
     "show_less": "Show less",
     "show_more": "Show more",
     "sign_in_options": "Other sign in options",
