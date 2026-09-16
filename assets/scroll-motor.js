@@ -262,6 +262,19 @@ function updateUrlForIndex(index) {
 }
 
 /**
+ * Saca el query param de fragancia de la URL, preservando el resto. El param sólo tiene sentido
+ * mientras el grupo está desplegado y paginando (modo activado, ver `updateUrlForIndex`); al
+ * colapsar — ✕ o salida por un borde, ver `collapseToFreeScroll` — deja de reflejar nada real, así
+ * que se saca en vez de quedar pisado con el valor de la última fragancia vista.
+ */
+function clearUrlFragranceParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(FRAGRANCE_QUERY_PARAM)) return;
+  url.searchParams.delete(FRAGRANCE_QUERY_PARAM);
+  window.history.replaceState(window.history.state, '', url);
+}
+
+/**
  * Construye la geometría del grupo de fragancias dentro de `containerSelector` y su contenido,
  * según el modo:
  *   - `collapsed` true (modo desactivado): UNA sola caja (posición relativa, tamaño exacto del
@@ -451,6 +464,10 @@ function syncPocLayersVisibility() {
  * wheel le pasa su `deltaY`): sin eso, ese tick se perdería — lo comemos con `preventDefault` para
  * que el scroll nativo no pelee por la posición con este `scrollTo` mientras el documento acaba de
  * cambiar de alto — y el movimiento se sentiría trabado justo en el instante del cambio de modo.
+ *
+ * También saca `?fragrance=` de la URL (`clearUrlFragranceParam`, pedido del usuario 2026-09-16): el
+ * param sólo tiene sentido mientras el grupo está desplegado y paginando, así que al colapsar —
+ * salga por un borde o por la ✕, es el mismo caso — deja de reflejar la pantalla actual.
  * @param {number} [extraScroll] - Px a sumar a `boxTops[0]` (el delta del evento que lo disparó).
  */
 function collapseToFreeScroll(extraScroll = 0) {
@@ -458,6 +475,7 @@ function collapseToFreeScroll(extraScroll = 0) {
   queuedExitDirection = null;
   pendingIndex = null;
   setAnimationsEnabled(false);
+  clearUrlFragranceParam();
   scrollToTop(boxTops[0] + extraScroll);
   syncPocLayersVisibility();
 }
@@ -632,14 +650,18 @@ export function init(root) {
   document.addEventListener('scroll', syncPocLayersVisibility, { passive: true, capture: true });
 
   // Overlay "Show fragancies" (pedido del usuario 2026-09-13/14/15, ver animationsEnabled más
-  // arriba): el botón de mostrar despliega el grupo (setAnimationsEnabled(true)) y centra la
+  // arriba): el botón de mostrar despliega el grupo (setAnimationsEnabled(true)), repone
+  // `?fragrance=` con la caja actual (updateUrlForIndex — pedido del usuario 2026-09-16: al
+  // colapsar se había sacado, ver clearUrlFragranceParam/collapseToFreeScroll, así que hay que
+  // volver a ponerlo acá para que la URL refleje otra vez la fragancia visible) y centra la
   // pantalla en la caja actual — de una reproduce el giro de armado de la botella sobre esa caja
   // (feedback inmediato de que ya están activas, disparado por buildBoxes/setDisplayInstant
   // adentro de setAnimationsEnabled, sin esperar al próximo scroll); el de cerrar colapsa el grupo
   // de nuevo (setAnimationsEnabled(false), la fragancia actual queda congelada en la única
-  // pantalla) y reacomoda el scroll a esa pantalla — sin animación, salto directo (pedido del
-  // usuario 2026-09-15: si se cierra a mitad de la paginación, ese lugar deja de existir en la
-  // versión colapsada, así que no tiene sentido animar la transición hacia el único lugar válido).
+  // pantalla), saca `?fragrance=` de la URL y reacomoda el scroll a esa pantalla — sin animación,
+  // salto directo (pedido del usuario 2026-09-15: si se cierra a mitad de la paginación, ese lugar
+  // deja de existir en la versión colapsada, así que no tiene sentido animar la transición hacia el
+  // único lugar válido).
   // Los dos botones viven en nodos que destroy() saca del DOM, así que sus listeners se van con ellos.
   root.querySelector('.fragrances-show-button')?.addEventListener('click', onShowClick);
   closeButton?.addEventListener('click', onCloseClick);
@@ -699,6 +721,7 @@ export function destroy(root) {
 /** Botón "Show fragancies": ver el comentario de los botones en init(). */
 function onShowClick() {
   setAnimationsEnabled(true);
+  updateUrlForIndex(currentIndex);
   scrollToTop(boxTops[currentIndex]);
 }
 
