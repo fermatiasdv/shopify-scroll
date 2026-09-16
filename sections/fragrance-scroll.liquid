@@ -88,6 +88,16 @@
     overscroll-behavior: none;
   }
 
+  /*
+   * El stage fijo cubre el header nativo apoyado en z-index (19 contra 18), pero durante el
+   * crossfade de fondo entre botellas las capas internas no siempre suman opacidad 1, así que por
+   * un frame se puede transparentar y dejar ver el header por debajo. Ocultarlo directamente
+   * mientras el modo animado está activo saca esa dependencia del timing del crossfade.
+   */
+  html.fragrance-scroll-animated .header-section {
+    visibility: hidden;
+  }
+
   .fragrance-scroll {
     display: block;
     position: relative;
