@@ -40,6 +40,7 @@ import {
   setBackgroundInstant,
   transitionBackground,
   prewarmIncomingProduct,
+  preloadStretchImages,
   disposeDisplay,
   disposeCollapsedEntry,
   renderCollapsedEntry,
@@ -608,6 +609,7 @@ export function init(root) {
   currentConfig = CONFIG;
   currentContent = CONFIG.content;
   pageSlugs = buildPageSlugs(CONFIG.content);
+  preloadStretchImages(CONFIG.content);
 
   const closeButton = root.querySelector('.fragrances-close-button');
   mountStageNodes([root.querySelector('.background-overlay'), closeButton]);

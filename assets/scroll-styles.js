@@ -484,6 +484,47 @@ function stackOrder(item) {
 }
 
 /**
+ * Aspect ratio (naturalWidth/naturalHeight) ya conocido de una imagen `stretch` (ver
+ * FIXED_INGREDIENT_IMAGE_OVERRIDES en content.js), por URL — sólo tiene entradas para las que
+ * `preloadStretchImages` ya terminó de precargar. Ver el comentario de esa función para el porqué.
+ */
+const naturalRatioCache = new Map();
+
+/**
+ * Precarga, apenas se arma CONFIG.content (llamada desde init() en motor.js, antes de que el
+ * usuario pueda llegar a ninguna caja), el aspect ratio real de cada imagen `stretch` que va a
+ * necesitar createImageElement — hoy sólo la de Painkiller (ver FIXED_INGREDIENT_IMAGE_OVERRIDES).
+ *
+ * Por qué hace falta: ese aspect ratio (naturalWidth/naturalHeight) es lo único que falta para
+ * calcular el ancho final del item (`item.size * naturalRatio * scaleX`, ver createImageElement) y
+ * sólo se conoce cuando el navegador termina de decodificar la imagen. Sin este preload, esa espera
+ * caía en el propio `<img>` que el usuario está viendo entrar (evento 'load' de ESE elemento,
+ * creado recién al llegar a la caja): como el fade-in del item arranca en el mismo instante en que
+ * se crea el elemento (ver delayedIngredientEnteringState/transitionDisplay), sin esperar a nada,
+ * el 'load' terminaba disparando SIEMPRE después de que el fade ya había arrancado — se veía el
+ * ingrediente aparecer angosto (el `width: auto` de reposo, antes de conocer el aspect ratio) y de
+ * golpe saltar a su ancho estirado real a mitad de la animación. Precargando acá, contra una imagen
+ * de sondeo separada que nadie muestra, el aspect ratio casi siempre ya está en el cache cuando el
+ * usuario llega a esa caja (aunque sea la primera vez, incluso por deep link) y createImageElement
+ * lo aplica de una, sin depender de ningún evento async en el elemento real.
+ * @param {Array} content - CONFIG.content (motor.js), ya armado.
+ */
+export function preloadStretchImages(content) {
+  content.forEach((entry) => {
+    entry.display.forEach((item) => {
+      if (!item.testFixed || !item.stretch || naturalRatioCache.has(item.image)) return;
+      const probe = new Image();
+      probe.addEventListener('load', () => {
+        if (probe.naturalWidth && probe.naturalHeight) {
+          naturalRatioCache.set(item.image, probe.naturalWidth / probe.naturalHeight);
+        }
+      }, { once: true });
+      probe.src = item.image;
+    });
+  });
+}
+
+/**
  * Crea el nodo de un item de imagen (ingredientes; el producto usa createProductCanvasElement).
  *
  * Un ingrediente normal fuerza un cuadro cuadrado (width === height === item.size): con
@@ -513,17 +554,25 @@ function createImageElement(item) {
       el.style.maxHeight = 'none';
     }
     if (item.stretch && 'size' in item) {
-      // El ancho 'auto' de arriba depende del aspect ratio real de la imagen, que recién se conoce
-      // al cargar — por eso el ancho final (scaleX) se fija en 'load', no acá. El alto (scaleY) sí
-      // se puede fijar ya mismo porque no depende de la imagen. positionDisplayEl (xi/yi = centro de
-      // la página acá) + translate(-50%, -50%) en el CSS mantienen el centro sin importar el tamaño.
+      // positionDisplayEl (xi/yi = centro de la página acá) + translate(-50%, -50%) en el CSS
+      // mantienen el centro sin importar el ancho. El alto (scaleY) no depende de la imagen, se fija
+      // ya mismo; el ancho (scaleX) si ya está precargado (ver naturalRatioCache/
+      // preloadStretchImages, el caso normal) se fija acá también, de una, sin salto — si por lo que
+      // sea todavía no está (primerísima carga de la sección, más rápida que el preload), cae al
+      // 'load' de este mismo elemento como red de contención, igual que antes.
       const { scaleX = 1, scaleY = 1 } = item.stretch;
       el.style.height = `${item.size * scaleY}px`;
-      el.addEventListener('load', () => {
-        if (!el.naturalWidth || !el.naturalHeight) return;
-        const naturalRatio = el.naturalWidth / el.naturalHeight;
-        el.style.width = `${item.size * naturalRatio * scaleX}px`;
-      }, { once: true });
+      const cachedRatio = naturalRatioCache.get(item.image);
+      if (cachedRatio) {
+        el.style.width = `${item.size * cachedRatio * scaleX}px`;
+      } else {
+        el.addEventListener('load', () => {
+          if (!el.naturalWidth || !el.naturalHeight) return;
+          const naturalRatio = el.naturalWidth / el.naturalHeight;
+          naturalRatioCache.set(item.image, naturalRatio);
+          el.style.width = `${item.size * naturalRatio * scaleX}px`;
+        }, { once: true });
+      }
     }
   } else if ('size' in item) {
     el.style.width = `${item.size}px`;
