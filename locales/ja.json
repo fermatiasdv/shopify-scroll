@@ -92,6 +92,7 @@
     "remove": "削除",
     "view_in_your_space": "自分のスペースで表示",
     "show_filters": "フィルター",
+    "show_fragrances": "フレグランスを表示",
     "clear": "クリア",
     "continue_shopping": "買い物を続ける",
     "log_in_html": "アカウントをお持ちですか？<a href=\"{{ link }}\">ログイン</a>することで、チェックアウトがスピーディーに行えます。",

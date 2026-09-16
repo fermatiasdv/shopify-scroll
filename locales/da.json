@@ -92,6 +92,7 @@
     "remove": "Fjern",
     "view_in_your_space": "Se i dit rum",
     "show_filters": "Filtrer",
+    "show_fragrances": "Vis dufte",
     "clear": "Ryd",
     "continue_shopping": "Fortsæt med at handle",
     "log_in_html": "Har du en konto? <a href=\"{{ link }}\">Log ind</a> for at betale hurtigere.",

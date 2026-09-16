@@ -92,6 +92,7 @@
     "remove": "제거",
     "view_in_your_space": "내 공간에서 보기",
     "show_filters": "필터",
+    "show_fragrances": "향수 보기",
     "clear": "지우기",
     "continue_shopping": "쇼핑 계속하기",
     "log_in_html": "계정이 있으십니까? 더 빠르게 결제하려면 <a href=\"{{ link }}\">로그인</a>하십시오.",

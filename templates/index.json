@@ -642,6 +642,10 @@
         "padding-block-end": 48
       }
     },
+    "fragrance_scroll": {
+      "type": "fragrance-scroll",
+      "settings": {}
+    },
     "product_list_fa6P9H": {
       "type": "product-list",
       "blocks": {
@@ -844,6 +848,7 @@
   },
   "order": [
     "slideshow_aymwKq",
+    "fragrance_scroll",
     "section_QRcAnj",
     "product_list_fa6P9H"
   ]

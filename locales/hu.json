@@ -92,6 +92,7 @@
     "remove": "Eltávolítás",
     "view_in_your_space": "Megtekintés a saját terében",
     "show_filters": "Szűrés",
+    "show_fragrances": "Illatok megjelenítése",
     "clear": "Törlés",
     "continue_shopping": "Vásárlás folytatása",
     "log_in_html": "Már van fiókod? <a href=\"{{ link }}\">Jelentkezz be</a> a gyorsabb fizetéshez.",

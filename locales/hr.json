@@ -93,6 +93,7 @@
     "remove": "Ukloni",
     "view_in_your_space": "Prikaži u svom prostoru",
     "show_filters": "Filtriraj",
+    "show_fragrances": "Prikaži mirise",
     "clear": "Očisti",
     "continue_shopping": "Nastavi s kupnjom",
     "log_in_html": "Imate li račun? <a href=\"{{ link }}\">Prijavite se</a> za brži završetak kupovine.",

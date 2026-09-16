@@ -94,6 +94,7 @@
     "remove": "Odebrat",
     "view_in_your_space": "Zobrazit ve vašem prostoru",
     "show_filters": "Filtr",
+    "show_fragrances": "Zobrazit vůně",
     "clear": "Vymazat",
     "continue_shopping": "Pokračovat v nákupu",
     "log_in_html": "Máte účet? <a href=\"{{ link }}\">Přihlaste se</a>, abyste urychlili zaplacení.",

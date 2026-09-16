@@ -92,6 +92,7 @@
     "remove": "Poista",
     "view_in_your_space": "Tarkastele tilassasi",
     "show_filters": "Suodata",
+    "show_fragrances": "Näytä tuoksut",
     "clear": "Tyhjennä",
     "continue_shopping": "Jatka ostoksia",
     "log_in_html": "Onko sinulla tili? <a href=\"{{ link }}\">Kirjaudu sisään</a>, jotta voit maksaa kassalla nopeammin.",

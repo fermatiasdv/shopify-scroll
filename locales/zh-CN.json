@@ -92,6 +92,7 @@
     "remove": "移除",
     "view_in_your_space": "在您的空间中查看",
     "show_filters": "筛选条件",
+    "show_fragrances": "显示香氛",
     "clear": "清除",
     "continue_shopping": "继续购物",
     "log_in_html": "已有账户？<a href=\"{{ link }}\">登录</a>以快速结账。",

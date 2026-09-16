@@ -92,6 +92,7 @@
     "remove": "Ta bort",
     "view_in_your_space": "Visa i din miljö",
     "show_filters": "Filter",
+    "show_fragrances": "Visa dofter",
     "clear": "Rensa",
     "continue_shopping": "Fortsätt handla",
     "log_in_html": "Har du ett konto? <a href=\"{{ link }}\">Logga in</a> för att betala snabbare.",
