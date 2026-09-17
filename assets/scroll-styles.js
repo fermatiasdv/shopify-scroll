@@ -1,11 +1,7 @@
-import { CONFIG, GROW_MAX } from '@scroll/config';
+import { CONFIG, GROW_MAX, FRAGRANCE_QUERY_PARAM } from '@scroll/config';
 import { getItemPhaseBehavior } from '@scroll/helpers';
 import { PRODUCT_CONTENT_X, PRODUCT_CONTENT_Y } from '@scroll/layout';
 import { createBottle, releaseCanvasRenderer } from '@scroll/bottle';
-
-// Re-exportado para que motor.js pueda consultarlo sin importar bottle.js directamente
-// (ver isBottleHovered en bottle.js: true si el mouse está sobre la botella).
-export { isBottleHovered } from '@scroll/bottle';
 
 let displayLayer = null;
 let currentDisplayEls = [];
@@ -612,20 +608,18 @@ function createImageElement(item) {
  *   nada acá, así que usa los defaults de spin() (el giro clásico completo).
  */
 /**
- * Destino del ancla sobre la botella, o `null` si todavía no hay ninguno.
- *
- * En el POC era un link de prueba a google.com/?fragrance=<slug> (pedido del usuario 2026-09-11).
- * En el tema se desactiva hasta que existan los productos (decisión del usuario 2026-09-15): sin
- * `href`, el `<a>` no navega ni recibe foco, pero sigue recibiendo el mouse para la inclinación con
- * flechas (ver bottle.js).
+ * Destino del ancla sobre la botella: link de prueba a google.com/?fragrance=<slug> (mismo que el
+ * POC, pedido del usuario 2026-09-11), abierto en pestaña nueva (target="_blank" en
+ * createProductLinkedCanvas) para no navegar fuera de la tienda mientras es sólo un placeholder.
  * TODO(fase siguiente): apuntar al producto real, por ejemplo `/products/<handle>` (el handle
  * podría coincidir con item.fragranceSlug), o a un "add to cart", cuando las fragancias sean
  * productos de Shopify.
  * @param {object} item - Item del producto (isProduct: true).
  */
-// eslint-disable-next-line no-unused-vars
 function bottleLinkHref(item) {
-  return null;
+  const url = new URL('https://www.google.com/');
+  if (item.fragranceSlug) url.searchParams.set(FRAGRANCE_QUERY_PARAM, item.fragranceSlug);
+  return url.toString();
 }
 
 /**
@@ -683,11 +677,10 @@ function createProductLinkedCanvas(item) {
 
   const wrapper = document.createElement('a');
   wrapper.className = 'display-item display-image display-image-product';
-  const href = bottleLinkHref(item);
-  if (href) {
-    wrapper.href = href;
-    wrapper.setAttribute('aria-label', item.fragranceName || '');
-  }
+  wrapper.href = bottleLinkHref(item);
+  wrapper.target = '_blank';
+  wrapper.rel = 'noopener noreferrer';
+  wrapper.setAttribute('aria-label', item.fragranceName || '');
   wrapper.appendChild(canvas);
 
   if ('size' in item) {
