@@ -243,7 +243,11 @@
   .fragrance-scroll .fragrances-overlay {
     position: absolute;
     inset: 0;
-    z-index: 20;
+    /*
+     * Por debajo de --layer-menu-drawer (18, ver .header-section) para que el botón "Show
+     * fragrances" pase detrás del header al scrollear, en vez de taparlo.
+     */
+    z-index: calc(var(--layer-menu-drawer) - 1);
     display: flex;
     align-items: flex-end;
     justify-content: center;
