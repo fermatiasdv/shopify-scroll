@@ -34,7 +34,6 @@ import { validateContent, applyCssVariables, clearCssVariables } from '@scroll/h
 import {
   setDisplayInstant,
   transitionDisplay,
-  isBottleHovered,
   collapseIngredientsToCenter,
   COLLAPSE_TO_CENTER_MS,
   setBackgroundInstant,
@@ -789,6 +788,17 @@ function onWheel(e) {
     return;
   }
 
+  // Mismo filtro que el chequeo de arriba (ronda 12), pero para navegar en vez de salir por el
+  // borde: `isLocked` se libera (COLLAPSE_TO_CENTER_MS + LOCK_MS) antes de que el giro de ENTRADA
+  // de la botella termine de verse (dura otro COLLAPSE_TO_CENTER_MS más) — ver el spin con
+  // startYaw: Math.PI en transitionDisplay (styles.js). Un trackpad puede seguir mandando `wheel`
+  // de la inercia del mismo gesto durante ese hueco; sin este chequeo, ese coletazo disparaba un
+  // SEGUNDO goToIndex que cortaba el giro de entrada a mitad de camino y arrancaba uno nuevo desde
+  // startYaw: Math.PI — se veía como que la botella "se reseteaba" y volvía a girar. Reportado por
+  // usuarios de Mac (trackpad, inercia larga); con mouse wheel casi no pasa porque la ráfaga de
+  // eventos muere antes de esa ventana.
+  if (gestureId === navGestureId) return;
+
   e.preventDefault();
   navGestureId = gestureId;
   goToIndex(currentIndex + direction, CONFIG.content);
@@ -798,17 +808,6 @@ function onWheel(e) {
 function onKeyDown(e) {
   if (!NEXT_KEYS.includes(e.key) && !PREV_KEYS.includes(e.key)) return;
   if (isForeignInteraction(e)) return;
-
-  // Con el mouse sobre la botella, flecha arriba/abajo la inclina en vez de cambiar de fragancia
-  // (ver isBottleHovered en bottle.js). Esto aplica en CUALQUIER modo (activado o desactivado): es
-  // una interacción de hover sobre la botella, no de navegación. El resto de las teclas de
-  // navegación (Space, PageUp/PageDown) siguen navegando igual aunque el mouse esté sobre la
-  // botella.
-  const isTiltKey = e.key === 'ArrowDown' || e.key === 'ArrowUp';
-  if (isTiltKey && isBottleHovered()) {
-    e.preventDefault();
-    return;
-  }
 
   // Modo desactivado: scroll siempre libre, no se navega desde acá (ver el wheel de arriba).
   if (!animationsEnabled) return;

@@ -461,13 +461,13 @@ function easeOutCubic(t) {
 const EASINGS = { in: easeInCubic, out: easeOutCubic, inOut: easeInOutCubic };
 
 // ---------------------------------------------------------------------------
-// Inclinación al pasar el mouse + flecha arriba/abajo (hover tilt)
+// Inclinación al pasar el mouse (hover tilt)
 // ---------------------------------------------------------------------------
 
 /**
- * Ángulo de inclinación (en GRADOS) al pasar el mouse sobre la botella y apretar flecha
- * arriba/abajo: flecha abajo lleva la parte de ARRIBA hacia adelante y la de ABAJO hacia atrás;
- * flecha arriba hace lo opuesto. Para probar otros ángulos, cambiar sólo este número.
+ * Ángulo de inclinación (en GRADOS) al pasar el mouse sobre la botella: con el mouse en la mitad
+ * de ARRIBA del canvas, la parte de abajo va hacia adelante y la de arriba hacia atrás; con el
+ * mouse en la mitad de ABAJO, al revés. Para probar otros ángulos, cambiar sólo este número.
  */
 const HOVER_TILT_ANGLE_DEG = 20;
 
@@ -475,19 +475,6 @@ const HOVER_TILT_ANGLE_DEG = 20;
 const HOVER_TILT_DURATION_MS = 300;
 
 const HOVER_TILT_ANGLE_RAD = THREE.MathUtils.degToRad(HOVER_TILT_ANGLE_DEG);
-
-/**
- * Cuántas botellas tienen el mouse encima ahora mismo (normalmente 0 o 1, pero un contador es
- * más robusto que un booleano único si llegara a haber una transición con dos canvases
- * superpuestos). motor.js consulta `isBottleHovered()` para no navegar de caja cuando la flecha
- * arriba/abajo se está usando para inclinar la botella en vez de para cambiar de fragancia.
- */
-let hoveredBottleCount = 0;
-
-/** True si el mouse está posicionado sobre alguna botella ahora mismo. */
-export function isBottleHovered() {
-  return hoveredBottleCount > 0;
-}
 
 /**
  * Monta la botella en un canvas y devuelve el control para girarla y para liberarla.
@@ -574,7 +561,7 @@ export function createBottle(canvas, options) {
   let pendingSpin = null;
   let pendingYaw = null;
 
-  // --- Inclinación al pasar el mouse + flecha arriba/abajo (ver HOVER_TILT_ANGLE_DEG) ---
+  // --- Inclinación al pasar el mouse (ver HOVER_TILT_ANGLE_DEG) ---
   let isHovered = false;
   let tiltAngle = 0; // ángulo actualmente aplicado (rad)
   let tiltTarget = 0; // ángulo hacia el que se está animando (rad)
@@ -606,31 +593,34 @@ export function createBottle(canvas, options) {
     tiltFrame = requestAnimationFrame(step);
   };
 
-  const handleBottleMouseEnter = () => {
+  /**
+   * Inclina según en qué mitad (vertical) del canvas está el mouse ahora: mitad de arriba toma el
+   * comportamiento que antes disparaba la flecha arriba, mitad de abajo el de la flecha abajo (ver
+   * HOVER_TILT_ANGLE_DEG).
+   */
+  const handleBottleMouseMove = (e) => {
+    if (disposed) return;
+    const rect = canvas.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const target = relativeY < rect.height / 2 ? -HOVER_TILT_ANGLE_RAD : HOVER_TILT_ANGLE_RAD;
+    animateTiltTo(target);
+  };
+
+  const handleBottleMouseEnter = (e) => {
     if (isHovered) return;
     isHovered = true;
-    hoveredBottleCount += 1;
+    handleBottleMouseMove(e);
   };
 
   const handleBottleMouseLeave = () => {
     if (!isHovered) return;
     isHovered = false;
-    hoveredBottleCount -= 1;
     animateTiltTo(0); // vuelve suave a la posición inicial
   };
 
-  const handleBottleKeyDown = (e) => {
-    if (!isHovered || disposed) return;
-    if (e.key === 'ArrowDown') {
-      animateTiltTo(HOVER_TILT_ANGLE_RAD); // abajo hacia atrás, arriba hacia adelante
-    } else if (e.key === 'ArrowUp') {
-      animateTiltTo(-HOVER_TILT_ANGLE_RAD); // arriba hacia atrás, abajo hacia adelante
-    }
-  };
-
   canvas.addEventListener('mouseenter', handleBottleMouseEnter);
+  canvas.addEventListener('mousemove', handleBottleMouseMove);
   canvas.addEventListener('mouseleave', handleBottleMouseLeave);
-  window.addEventListener('keydown', handleBottleKeyDown);
 
   const runSpin = ({
     durationMs = SPIN_DURATION_MS, turns = 1, startYaw = 0, easing = 'inOut', onComplete, onReveal,
@@ -695,7 +685,7 @@ export function createBottle(canvas, options) {
       // atrás): se aplica ACÁ, antes del primer draw(), para que ni ese primer frame se vea en 0°.
       rig.rotation.y = pendingSpin.startYaw;
     }
-    // Por si el hover + flecha ya habían pedido inclinar la botella antes de que cargara el modelo.
+    // Por si el hover ya había pedido inclinar la botella antes de que cargara el modelo.
     rig.rotation.x = tiltAngle;
     draw();
     // Ver labelTextureReady: redibuja cuando la etiqueta termina de cargar (si ya estaba cargada,
@@ -783,8 +773,8 @@ export function createBottle(canvas, options) {
    * lo hace cuando este `<canvas>` se va a reusar para la próxima botella en vez de descartarse),
    * el renderer/environment NO se destruyen — quedan vivos en `canvasRendererCache` para que la
    * PRÓXIMA `createBottle` sobre este mismo `<canvas>` los reuse (ver ese comentario). El resto de
-   * la limpieza (frames, listeners, hoveredBottleCount) es igual en los dos casos: es estado de
-   * ESTA instancia, no del renderer.
+   * la limpieza (frames, listeners) es igual en los dos casos: es estado de ESTA instancia, no del
+   * renderer.
    * @param {{keepAlive?: boolean}} [opts]
    */
   const dispose = (opts = {}) => {
@@ -795,12 +785,9 @@ export function createBottle(canvas, options) {
     if (tiltFrame !== null) cancelAnimationFrame(tiltFrame);
     tiltFrame = null;
     canvas.removeEventListener('mouseenter', handleBottleMouseEnter);
+    canvas.removeEventListener('mousemove', handleBottleMouseMove);
     canvas.removeEventListener('mouseleave', handleBottleMouseLeave);
-    window.removeEventListener('keydown', handleBottleKeyDown);
-    if (isHovered) {
-      isHovered = false;
-      hoveredBottleCount -= 1;
-    }
+    isHovered = false;
     if (opts.keepAlive) return;
     canvasRendererCache.delete(canvas);
     envTarget.dispose();
