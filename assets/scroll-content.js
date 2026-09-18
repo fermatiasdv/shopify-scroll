@@ -85,14 +85,13 @@ function boxBackgrounds() {
  *
  * Ronda 2026-09-18: llegó el arte final (recortado) de Painkiller, Forbidden Flower, Crimson
  * Desert, Ecstasy, Epicurean y London Legend — se subieron a assets/ y cada clave de arriba ya
- * apunta a su propia imagen. Después llegó el de Rebellious, Jagged Edge y Glitterati. Sólo Wonder
- * of the World todavía no tiene arte propio (falta WonderOfTheWorldIngredients.png), así que sigue
- * apuntando a 'painkiller' hasta que llegue el suyo.
+ * apunta a su propia imagen. Después llegó el de Rebellious, Jagged Edge, Glitterati y Wonder of
+ * the World: todas las fragancias tienen ya su arte propio.
  */
 const FIXED_INGREDIENT_IMAGE_OVERRIDES = {
   Rebellious: { image: 'rebellious' },
   'Forbidden Flower': { image: 'forbidden_flower' },
-  'Wonder of the World': { image: 'painkiller' },
+  'Wonder of the World': { image: 'wonder_of_the_world' },
   Painkiller: {
     image: 'painkiller',
     stretch: { scaleX: 2, scaleY: 1.2 },
