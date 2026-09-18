@@ -39,14 +39,14 @@ import {
   setBackgroundInstant,
   transitionBackground,
   prewarmIncomingProduct,
-  preloadStretchImages,
+  preloadImages,
   disposeDisplay,
   disposeCollapsedEntry,
   renderCollapsedEntry,
   mountStageNodes,
   disposeAll,
 } from '@scroll/styles';
-import { loadAssets } from '@scroll/assets';
+import { ASSETS, loadAssets } from '@scroll/assets';
 import { getScrollTop, scrollToTop, scrollOffsetTop, viewportSize } from '@scroll/viewport';
 
 /** Clase sobre `<html>` con el grupo desplegado y paginando (modo activado). */
@@ -626,13 +626,13 @@ export function init(root) {
   currentConfig = CONFIG;
   currentContent = CONFIG.content;
   pageSlugs = buildPageSlugs(CONFIG.content);
-  preloadStretchImages(CONFIG.content);
 
   const closeButton = root.querySelector('.fragrances-close-button');
   mountStageNodes([root.querySelector('.background-overlay'), closeButton]);
 
   const requestedIndex = getIndexFromUrl();
   if (requestedIndex !== null) currentIndex = requestedIndex;
+  preloadImages(CONFIG.content, currentIndex, Object.values(ASSETS.labels));
 
   setAnimationsEnabled(animationsEnabled);
 

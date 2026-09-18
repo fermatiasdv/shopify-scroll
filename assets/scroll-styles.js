@@ -486,6 +486,24 @@ function stackOrder(item) {
  */
 const naturalRatioCache = new Map();
 
+const preloadedImages = new Map();
+
+function preloadImage(url, priority) {
+  if (!url || preloadedImages.has(url)) return;
+  const probe = new Image();
+  probe.fetchPriority = priority;
+  probe.decoding = 'async';
+  preloadedImages.set(url, probe);
+  probe.src = url;
+  probe.decode().then(() => {
+    if (probe.naturalWidth && probe.naturalHeight) {
+      naturalRatioCache.set(url, probe.naturalWidth / probe.naturalHeight);
+    }
+  }).catch(() => {
+    preloadedImages.delete(url);
+  });
+}
+
 /**
  * Precarga, apenas se arma CONFIG.content (llamada desde init() en motor.js, antes de que el
  * usuario pueda llegar a ninguna caja), el aspect ratio real de cada imagen `stretch` que va a
@@ -503,21 +521,31 @@ const naturalRatioCache = new Map();
  * de sondeo separada que nadie muestra, el aspect ratio casi siempre ya está en el cache cuando el
  * usuario llega a esa caja (aunque sea la primera vez, incluso por deep link) y createImageElement
  * lo aplica de una, sin depender de ningún evento async en el elemento real.
+ *
+ * Ronda 2026-09-18: además del aspect ratio, la precarga ahora cubre TODAS las imágenes de la
+ * experiencia (ingredientes, fondos y `extraUrls`, hoy las etiquetas de la botella), no sólo la
+ * `stretch`. Antes las demás recién se descargaban y decodificaban cuando su `<img>`/fondo entraba
+ * al DOM, o sea con el usuario ya mirando la caja. Ahora se piden apenas arranca la sección,
+ * empezando por la caja actual y la siguiente (prioridad normal) y siguiendo con el resto en
+ * prioridad baja, para no competir con el GLB ni con lo que se ve ya. Cada sonda queda guardada en
+ * `preloadedImages` (referencia fuerte) y se le hace `decode()`, así el navegador tiene la imagen
+ * ya decodificada en memoria cuando createImageElement/el fondo la piden, sin tirón en el primer
+ * frame. Si una imagen falla, se suelta de `preloadedImages` y se carga normal cuando haga falta.
  * @param {Array} content - CONFIG.content (motor.js), ya armado.
+ * @param {number} [startIndex] - Caja desde la que empezar (la actual); el resto sigue en orden circular.
+ * @param {string[]} [extraUrls] - Otras URLs a precargar al final, en prioridad baja.
  */
-export function preloadStretchImages(content) {
-  content.forEach((entry) => {
+export function preloadImages(content, startIndex = 0, extraUrls = []) {
+  const count = content.length;
+  for (let offset = 0; offset < count; offset += 1) {
+    const entry = content[(startIndex + offset) % count];
+    const priority = offset < 2 ? 'auto' : 'low';
     entry.display.forEach((item) => {
-      if (!item.testFixed || !item.stretch || naturalRatioCache.has(item.image)) return;
-      const probe = new Image();
-      probe.addEventListener('load', () => {
-        if (probe.naturalWidth && probe.naturalHeight) {
-          naturalRatioCache.set(item.image, probe.naturalWidth / probe.naturalHeight);
-        }
-      }, { once: true });
-      probe.src = item.image;
+      if (item.testFixed) preloadImage(item.image, priority);
     });
-  });
+    preloadImage(entry.bgImage, priority);
+  }
+  extraUrls.forEach((url) => preloadImage(url, 'low'));
 }
 
 /**
@@ -553,7 +581,7 @@ function createImageElement(item) {
       // positionDisplayEl (xi/yi = centro de la página acá) + translate(-50%, -50%) en el CSS
       // mantienen el centro sin importar el ancho. El alto (scaleY) no depende de la imagen, se fija
       // ya mismo; el ancho (scaleX) si ya está precargado (ver naturalRatioCache/
-      // preloadStretchImages, el caso normal) se fija acá también, de una, sin salto — si por lo que
+      // preloadImages, el caso normal) se fija acá también, de una, sin salto — si por lo que
       // sea todavía no está (primerísima carga de la sección, más rápida que el preload), cae al
       // 'load' de este mismo elemento como red de contención, igual que antes.
       const { scaleX = 1, scaleY = 1 } = item.stretch;

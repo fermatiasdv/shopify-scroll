@@ -82,21 +82,26 @@ function boxBackgrounds() {
  * (resultado visual idéntico). `image` ya no es una ruta sino la clave de `ASSETS.ingredients`
  * (ver scroll-assets.js), que arma la sección con `asset_url`. Cuando llegue el arte real de cada
  * fragancia: subir el archivo, sumarlo al JSON de la sección y cambiar la clave acá.
+ *
+ * Ronda 2026-09-18: llegó el arte final (recortado) de Painkiller, Forbidden Flower, Crimson
+ * Desert, Ecstasy, Epicurean y London Legend — se subieron a assets/ y cada clave de arriba ya
+ * apunta a su propia imagen. Después llegó el de Rebellious, Jagged Edge, Glitterati y Wonder of
+ * the World: todas las fragancias tienen ya su arte propio.
  */
 const FIXED_INGREDIENT_IMAGE_OVERRIDES = {
-  Rebellious: { image: 'painkiller' },
+  Rebellious: { image: 'rebellious' },
   'Forbidden Flower': { image: 'forbidden_flower' },
-  'Wonder of the World': { image: 'painkiller' },
+  'Wonder of the World': { image: 'wonder_of_the_world' },
   Painkiller: {
     image: 'painkiller',
     stretch: { scaleX: 2, scaleY: 1.2 },
   },
-  'Jagged Edge': { image: 'painkiller' },
-  'Crimson Desert': { image: 'painkiller' },
-  Glitterati: { image: 'painkiller' },
-  Ecstasy: { image: 'painkiller' },
-  Epicurean: { image: 'painkiller' },
-  'London Legend': { image: 'painkiller' },
+  'Jagged Edge': { image: 'jagged_edge' },
+  'Crimson Desert': { image: 'crimson_desert' },
+  Glitterati: { image: 'glitterati' },
+  Ecstasy: { image: 'ecstasy' },
+  Epicurean: { image: 'epicurean' },
+  'London Legend': { image: 'london_legend' },
 };
 
 /**
