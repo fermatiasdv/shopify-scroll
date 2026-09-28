@@ -208,8 +208,8 @@ let touchGestureId = 0;
 /**
  * Nodo (cacheado, se busca una sola vez) del overlay "Show fragancies" (ver el comentario de
  * `.fragrances-overlay` en index.html). `buildBoxes` lo REUBICA como hijo de la caja colapsada en
- * cada llamada — nunca lo recrea — para que el botón de adentro quede contenido en esa pantalla sin
- * perder el listener de click atado una sola vez en init() (ver showButton ahí).
+ * cada llamada — nunca lo recrea — para que el botón de adentro quede contenido en esa pantalla (y
+ * su click burbujee al listener de esa caja, ver onCollapsedBoxClick).
  */
 let fragrancesOverlayEl = null;
 
@@ -324,6 +324,12 @@ function buildBoxes(containerSelector, content, collapsed) {
     box.style.height = `${vh}px`;
     box.style.position = 'relative';
     box.style.overflow = 'hidden';
+    // Ronda 2026-09-28 (igual que en react-scroll): tocar cualquier punto de la pantalla colapsada
+    // la despliega, no sólo el botón "Show fragancies" (que queda adentro de esta caja, ver más
+    // abajo, así que su click también llega acá). La caja se recrea en cada buildBoxes, así que el
+    // listener se va con ella.
+    box.style.cursor = 'pointer';
+    box.addEventListener('click', onCollapsedBoxClick);
     container.appendChild(box);
     boxTops.push(containerTop);
     renderCollapsedEntry(box, entry);
@@ -661,8 +667,9 @@ export function init(root) {
   // salto directo (pedido del usuario 2026-09-15: si se cierra a mitad de la paginación, ese lugar
   // deja de existir en la versión colapsada, así que no tiene sentido animar la transición hacia el
   // único lugar válido).
-  // Los dos botones viven en nodos que destroy() saca del DOM, así que sus listeners se van con ellos.
-  root.querySelector('.fragrances-show-button')?.addEventListener('click', onShowClick);
+  // Desde la ronda 2026-09-28 el botón de mostrar no tiene listener propio: su click burbujea a la
+  // caja colapsada que lo contiene (ver onCollapsedBoxClick en buildBoxes), que despliega igual.
+  // La ✕ vive en un nodo que destroy() saca del DOM, así que su listener se va con él.
   closeButton?.addEventListener('click', onCloseClick);
 
   window.addEventListener('resize', onResize);
@@ -722,6 +729,17 @@ function onShowClick() {
   setAnimationsEnabled(true);
   updateUrlForIndex(currentIndex);
   scrollToTop(boxTops[currentIndex]);
+}
+
+/**
+ * Click en cualquier punto de la caja colapsada (ver buildBoxes), incluido el botón "Show
+ * fragancies". Excepción: la botella es un link (ver bottleLinkHref en styles.js) y conserva su
+ * acción propia, abrir el link, sin desplegar además el grupo.
+ * @param {MouseEvent} event
+ */
+function onCollapsedBoxClick(event) {
+  if (event.target instanceof Element && event.target.closest('a[href]')) return;
+  onShowClick();
 }
 
 /** Botón ✕. Desde la ronda 13 la ✕ y la salida por un borde son literalmente lo mismo. */

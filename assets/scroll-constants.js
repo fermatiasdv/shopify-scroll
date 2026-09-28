@@ -5,7 +5,7 @@
  *
  * En el tema estas rutas ya NO apuntan a archivos reales: ni las imágenes de producto (la botella
  * la dibuja el GLB, ver createDisplayElement en styles.js) ni las de ingrediente por archivo (cada
- * fragancia usa una única imagen fija, ver FIXED_INGREDIENT_IMAGE_OVERRIDES en content.js) se
+ * fragancia usa sus 3 variantes fijas, ver FIXED_INGREDIENT_IMAGE_OVERRIDES en content.js) se
  * subieron a `assets/`. Se conservan como identificadores porque `buildContent` descarta toda
  * fragancia con `fragancia === ''` — vaciarlas haría desaparecer las fragancias.
  */
