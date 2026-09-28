@@ -14,9 +14,11 @@
  *   model: string,
  *   labels: Record<string, string>,
  *   backgrounds: string[],
- *   ingredients: Record<string, string>,
+ *   ingredients: Record<string, string[]>,
  * }}
  * `labels.default` es la etiqueta de toda fragancia sin entrada propia (Painkiller, ver bottle.js).
+ * `ingredients[slug]` son las 3 variantes de imagen de ingrediente de la fragancia (ver
+ * createImageElement en styles.js, que sortea una cada vez que el ingrediente pasa a visible).
  */
 export const ASSETS = {
   model: '',

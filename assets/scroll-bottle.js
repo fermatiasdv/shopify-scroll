@@ -415,8 +415,12 @@ function buildBottleRig(master, height, maxRadius, labelUrl) {
 // API pública
 // ---------------------------------------------------------------------------
 
-/** Duración por defecto de la rotación de entrada, en ms (~2 segundos). */
-export const SPIN_DURATION_MS = 2000;
+/**
+ * Duración por defecto de la rotación de entrada, en ms. Hasta 2026-09-28 era 2000; ese día se
+ * bajó a 1000 (pedido del usuario, igual que en react-scroll) para que la vuelta completa de carga
+ * gire a la misma velocidad angular que los medios giros de una transición (500ms cada uno).
+ */
+export const SPIN_DURATION_MS = 1000;
 
 /**
  * Fracción del `durationMs` de UN giro en la que se dispara `onReveal` (ver runSpin): no hay que
@@ -425,8 +429,7 @@ export const SPIN_DURATION_MS = 2000;
  * desde 2026-09-10 no todos los giros duran lo mismo (ver TRANSITION_SPIN_IN_MS en styles.js: el
  * giro de "entrada, completando la vuelta" de una transición de caja es más corto que el giro
  * clásico de carga inicial) y el reveal tiene que seguir cayendo cerca del final de CUALQUIERA de
- * los dos, no sólo del de 2s. Con el giro clásico (SPIN_DURATION_MS = 2000ms) da exactamente los
- * 1.6s de siempre (0.8 × 2000).
+ * los dos. Con el giro clásico (SPIN_DURATION_MS = 1000ms) da 800ms (0.8 × 1000).
  */
 const SPIN_REVEAL_FRACTION = 0.8;
 

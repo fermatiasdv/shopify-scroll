@@ -541,11 +541,21 @@ export function preloadImages(content, startIndex = 0, extraUrls = []) {
     const entry = content[(startIndex + offset) % count];
     const priority = offset < 2 ? 'auto' : 'low';
     entry.display.forEach((item) => {
-      if (item.testFixed) preloadImage(item.image, priority);
+      // Las 3 variantes (ver pickIngredientVariant): cualquiera puede salir sorteada.
+      if (item.testFixed) (item.images ?? [item.image]).forEach((url) => preloadImage(url, priority));
     });
     preloadImage(entry.bgImage, priority);
   }
   extraUrls.forEach((url) => preloadImage(url, 'low'));
+}
+
+/**
+ * Elige al azar una de las variantes de imagen de ingrediente de una fragancia (ronda 2026-09-28,
+ * igual que pickIngredientVariant en react-scroll).
+ * @param {string[]} variants - URLs de las variantes.
+ */
+function pickIngredientVariant(variants) {
+  return variants[Math.floor(Math.random() * variants.length)];
 }
 
 /**
@@ -563,12 +573,19 @@ export function preloadImages(content, startIndex = 0, extraUrls = []) {
  * se pisan a `none` porque el alto real de la botella puede superar esos topes a propósito (llega a
  * ocupar el 100% del alto del viewport en modo 'stack', ver PRODUCT_VIEWPORT_HEIGHT_FRACTION_STACK
  * en layout.js).
- * @param {object} item - Item de "display", del que se leen image y size.
+ *
+ * Si el item trae `images` (las 3 variantes de ingrediente, ver buildFixedIngredientItem en
+ * content.js), antes de crear el `<img>` sortea una y la deja en `item.image`: cada `<img>` nuevo es
+ * una aparición del ingrediente (giro de carga, entrada de una transición), así que cada aparición
+ * sortea de nuevo, independiente de la anterior (puede repetirse).
+ * @param {object} item - Item de "display", del que se leen image (o images) y size.
  */
 function createImageElement(item) {
+  if (item.images) item.image = pickIngredientVariant(item.images);
+  const image = item.image;
   const el = document.createElement('img');
   el.className = 'display-item display-image';
-  el.src = item.image;
+  el.src = image;
   el.alt = '';
   if (item.testFixed) {
     if ('size' in item) {
@@ -586,14 +603,14 @@ function createImageElement(item) {
       // 'load' de este mismo elemento como red de contención, igual que antes.
       const { scaleX = 1, scaleY = 1 } = item.stretch;
       el.style.height = `${item.size * scaleY}px`;
-      const cachedRatio = naturalRatioCache.get(item.image);
+      const cachedRatio = naturalRatioCache.get(image);
       if (cachedRatio) {
         el.style.width = `${item.size * cachedRatio * scaleX}px`;
       } else {
         el.addEventListener('load', () => {
           if (!el.naturalWidth || !el.naturalHeight) return;
           const naturalRatio = el.naturalWidth / el.naturalHeight;
-          naturalRatioCache.set(item.image, naturalRatio);
+          naturalRatioCache.set(image, naturalRatio);
           el.style.width = `${item.size * naturalRatio * scaleX}px`;
         }, { once: true });
       }

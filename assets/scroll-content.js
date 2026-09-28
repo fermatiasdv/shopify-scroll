@@ -167,13 +167,18 @@ function applyAlmondTestLayout(item, layout) {
  * tanto la caja de prueba (con ALMOND_TEST_IMAGE) como cualquier fragancia real listada en
  * FIXED_INGREDIENT_IMAGE_OVERRIDES (ver buildFraganciaBox). applyAlmondTestLayout es agnóstica a
  * qué imagen le llega, así que no hizo falta tocarla para generalizar esto.
- * @param {string} image - Asset a mostrar en reemplazo de los ingredientes.
+ *
+ * Ronda 2026-09-28 (igual que en react-scroll): cada fragancia tiene 3 variantes de imagen. El item
+ * guarda las 3 en `images`; createImageElement (styles.js) sortea una al azar cada vez que crea el
+ * `<img>` (o sea, cada vez que el ingrediente pasa de oculto a visible) y la deja en `image`, que
+ * arranca con la primera para que todo lo que lee `item.image` tenga siempre una URL válida.
+ * @param {string[]} images - Variantes del asset a mostrar en reemplazo de los ingredientes.
  * @param {object} layout - Layout de layoutFor.
  * @param {{scaleX: number, scaleY: number}} [stretch] - Estiramiento opcional por ejes, ver
- *   FIXED_INGREDIENT_IMAGE_OVERRIDES/createImageElement (styles.js).
+ *   FIXED_INGREDIENT_IMAGE_OVERRIDES/createImageElement (styles.js). Se aplica a las 3 variantes.
  */
-function buildFixedIngredientItem(image, layout, stretch) {
-  const item = applyAlmondTestLayout({ image, testFixed: true }, layout);
+function buildFixedIngredientItem(images, layout, stretch) {
+  const item = applyAlmondTestLayout({ images, image: images[0], testFixed: true }, layout);
   if (stretch) item.stretch = stretch;
   return item;
 }
