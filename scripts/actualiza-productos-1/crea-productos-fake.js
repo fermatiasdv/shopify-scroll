@@ -26,10 +26,14 @@ const FRAGRANCES = [
   'Jagged Edge',
   'Crimson Desert',
   'Glitterati',
-  'Ecstasy',
+  'Ecxtasy',
   'Epicurean',
   'London Legend',
 ];
+
+// Fragancias renombradas: handle viejo -> nombre nuevo. Si existe el producto con el handle viejo y
+// todavía no el nuevo, se le cambian título y handle (con redirect) en vez de crear un duplicado.
+const RENAMES = { ecstasy: 'Ecxtasy' };
 
 const handleFor = (name) => name.trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -185,6 +189,41 @@ async function createProduct(name, handle, publicationId) {
   return id;
 }
 
+async function renameProduct(id, name, handle) {
+  const updated = await graphql(
+    `
+      mutation ($product: ProductUpdateInput!) {
+        productUpdate(product: $product) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    { product: { id, title: name, handle, redirectNewHandle: true } },
+  );
+  assertNoUserErrors(`productUpdate ${handle}`, updated.productUpdate.userErrors);
+}
+
+async function applyRenames() {
+  for (const [oldHandle, newName] of Object.entries(RENAMES)) {
+    const newHandle = handleFor(newName);
+    const [oldProduct, newProduct] = await Promise.all([findProduct(oldHandle), findProduct(newHandle)]);
+    if (!oldProduct) continue;
+    if (newProduct) {
+      console.warn(`! ${oldHandle}: existe también ${newHandle}, no se renombra (borrá uno a mano)`);
+      continue;
+    }
+    if (!APPLY) {
+      console.log(`~ ${oldHandle}: se renombraría a "${newName}" (${newHandle})`);
+      continue;
+    }
+    await renameProduct(oldProduct.id, newName, newHandle);
+    console.log(`~ ${oldHandle}: renombrado a "${newName}" (${newHandle})`);
+  }
+}
+
 async function main() {
   console.log(APPLY ? 'Modo --apply: se crean los productos que falten.' : 'Dry run (agregá --apply para crear).');
 
@@ -195,6 +234,8 @@ async function main() {
         'los productos se crean sin publicar. Publicalos a mano en el admin o agregá los scopes y volvé a correr el script.',
     );
   }
+
+  await applyRenames();
 
   for (const name of FRAGRANCES) {
     const handle = handleFor(name);

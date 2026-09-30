@@ -7,7 +7,7 @@ import {
   FraganciaJaggedEdge,
   FraganciaCrimsonDesert,
   FraganciaGlitterati,
-  FraganciaEcstasy,
+  FraganciaEcxtasy,
   FraganciaEpicurean,
   FraganciaLondonLegend,
 } from '@scroll/constants';
@@ -25,7 +25,7 @@ const ALL_FRAGRANCIAS = [
   FraganciaJaggedEdge,
   FraganciaCrimsonDesert,
   FraganciaGlitterati,
-  FraganciaEcstasy,
+  FraganciaEcxtasy,
   FraganciaEpicurean,
   FraganciaLondonLegend,
 ];
@@ -84,7 +84,7 @@ function boxBackgrounds() {
  * fragancia: subir el archivo, sumarlo al JSON de la sección y cambiar la clave acá.
  *
  * Ronda 2026-09-18: llegó el arte final (recortado) de Painkiller, Forbidden Flower, Crimson
- * Desert, Ecstasy, Epicurean y London Legend — se subieron a assets/ y cada clave de arriba ya
+ * Desert, Ecxtasy, Epicurean y London Legend — se subieron a assets/ y cada clave de arriba ya
  * apunta a su propia imagen. Después llegó el de Rebellious, Jagged Edge, Glitterati y Wonder of
  * the World: todas las fragancias tienen ya su arte propio.
  */
@@ -99,7 +99,7 @@ const FIXED_INGREDIENT_IMAGE_OVERRIDES = {
   'Jagged Edge': { image: 'jagged_edge' },
   'Crimson Desert': { image: 'crimson_desert' },
   Glitterati: { image: 'glitterati' },
-  Ecstasy: { image: 'ecstasy' },
+  Ecxtasy: { image: 'ecxtasy' },
   Epicurean: { image: 'epicurean' },
   'London Legend': { image: 'london_legend' },
 };

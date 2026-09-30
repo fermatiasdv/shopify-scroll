@@ -27,7 +27,7 @@ export const Painkiller = `${PRODUCTS_PATH}painkiller.png`;
 export const JaggedEdge = `${PRODUCTS_PATH}jaggededge.png`;
 export const CrimsonDesert = `${PRODUCTS_PATH}crimsondesert.png`;
 export const Glitterati = `${PRODUCTS_PATH}glitterati.png`;
-export const Ecstasy = `${PRODUCTS_PATH}ecstasy.png`;
+export const Ecxtasy = `${PRODUCTS_PATH}ecxtasy.png`;
 export const Epicurean = `${PRODUCTS_PATH}epicurean.png`;
 export const LondonLegend = `${PRODUCTS_PATH}londonlegend.png`;
 
@@ -204,10 +204,10 @@ export const FraganciaGlitterati = {
     { nombre: 'Musk', imagenes: Musk },
   ],
 };
-export const FraganciaEcstasy = {
+export const FraganciaEcxtasy = {
   idx: 8,
-  nombre: 'Ecstasy',
-  fragancia: Ecstasy,
+  nombre: 'Ecxtasy',
+  fragancia: Ecxtasy,
   ingredientes: [
     { nombre: 'Black Currant', imagenes: BlackCurrant },
     { nombre: 'Ginger', imagenes: Ginger },

@@ -19,14 +19,14 @@
 >
 
 {%- liquid
-  assign label_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecstasy,epicurean,london_legend' | split: ','
+  assign label_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecxtasy,epicurean,london_legend' | split: ','
   # Pool de fondos BG1..BG15.png: cada transición sortea uno distinto (ver pickRandomBackground en scroll-styles.js).
   assign first_background = 'BG1.png' | asset_url
   # 3 variantes de imagen de ingrediente por fragancia (scroll-ingredient-<slug sin _>-<n>.webp);
   # scroll-content.js/styles.js sortean una cada vez que el ingrediente pasa a visible.
-  assign ingredient_slugs = 'rebellious,wonder_of_the_world,painkiller,jagged_edge,glitterati,forbidden_flower,crimson_desert,ecstasy,epicurean,london_legend' | split: ','
+  assign ingredient_slugs = 'rebellious,wonder_of_the_world,painkiller,jagged_edge,glitterati,forbidden_flower,crimson_desert,ecxtasy,epicurean,london_legend' | split: ','
   # Imagen estática de la botella de frente: el estado colapsado la muestra en vez de montar el 3D.
-  assign poster_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecstasy,epicurean,london_legend,painkiller' | split: ','
+  assign poster_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecxtasy,epicurean,london_legend,painkiller' | split: ','
 -%}
 
 <fragrance-scroll class="fragrance-scroll">
