@@ -638,7 +638,7 @@ export function init(root) {
 
   const requestedIndex = getIndexFromUrl();
   if (requestedIndex !== null) currentIndex = requestedIndex;
-  preloadImages(CONFIG.content, currentIndex, Object.values(ASSETS.labels));
+  preloadImages(CONFIG.content, currentIndex, [...Object.values(ASSETS.labels), ...ASSETS.backgrounds]);
 
   setAnimationsEnabled(animationsEnabled);
 

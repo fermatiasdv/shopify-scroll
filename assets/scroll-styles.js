@@ -2,6 +2,7 @@ import { CONFIG, GROW_MAX, FRAGRANCE_QUERY_PARAM } from '@scroll/config';
 import { getItemPhaseBehavior } from '@scroll/helpers';
 import { PRODUCT_CONTENT_X, PRODUCT_CONTENT_Y } from '@scroll/layout';
 import { createBottle, releaseCanvasRenderer } from '@scroll/bottle';
+import { ASSETS } from '@scroll/assets';
 
 let displayLayer = null;
 let currentDisplayEls = [];
@@ -357,6 +358,20 @@ function ensureBackgroundLayer() {
   return backgroundLayer;
 }
 
+/** Último fondo mostrado en la capa fija; pickRandomBackground lo excluye para no repetir seguido. */
+let currentBackground;
+
+/**
+ * Sortea un fondo del pool de la sección (`ASSETS.backgrounds`), distinto del que ya se ve para que
+ * cada scroll cambie de verdad. Sin pool devuelve `fallback` (el bgImage propio de la caja).
+ * @param {string} [fallback] - Fondo a usar si el pool está vacío.
+ */
+function pickRandomBackground(fallback) {
+  const pool = ASSETS.backgrounds.filter((url) => url !== currentBackground);
+  if (!pool.length) return ASSETS.backgrounds[0] ?? fallback;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 /**
  * Muestra el fondo de una caja sin animar (carga inicial o resize): mismo momento y mismo criterio
  * que setDisplayInstant para el contenido. Deja el nodo activo en opacity 1 sin transición (para no
@@ -368,6 +383,7 @@ export function setBackgroundInstant(entry) {
   ensureBackgroundLayer();
   const [current, next] = backgroundEls;
 
+  currentBackground = entry.bgImage;
   applyBoxVisual(current, entry);
   [current, next].forEach((el) => {
     el.style.transition = 'none';
@@ -399,7 +415,9 @@ export function transitionBackground(entry) {
   const incomingIndex = activeBackgroundIndex === 0 ? 1 : 0;
   const incomingEl = backgroundEls[incomingIndex];
 
-  applyBoxVisual(incomingEl, entry);
+  const bgImage = pickRandomBackground(entry.bgImage);
+  currentBackground = bgImage;
+  applyBoxVisual(incomingEl, { ...entry, bgImage });
   incomingEl.style.transition = 'none';
   incomingEl.style.opacity = '0';
 

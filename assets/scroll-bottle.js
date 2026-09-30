@@ -244,6 +244,31 @@ function makeStudioEnvironment(renderer) {
 // Carga y armado del modelo maestro (una sola vez por página)
 // ---------------------------------------------------------------------------
 
+/** Cantidad de estrías verticales alrededor de la tapa. */
+const CAP_FLUTE_COUNT = 24;
+
+let capFlutesTexture = null;
+
+/** Bump map de estrías verticales (repetido en U, que en el cilindro de la tapa envuelve el perímetro). */
+function getCapFlutesTexture() {
+  if (capFlutesTexture) return capFlutesTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 4;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  gradient.addColorStop(0, '#000');
+  gradient.addColorStop(0.5, '#fff');
+  gradient.addColorStop(1, '#000');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  capFlutesTexture = new THREE.CanvasTexture(canvas);
+  capFlutesTexture.wrapS = THREE.RepeatWrapping;
+  capFlutesTexture.wrapT = THREE.RepeatWrapping;
+  capFlutesTexture.repeat.set(CAP_FLUTE_COUNT, 1);
+  return capFlutesTexture;
+}
+
 /**
  * Carga el GLB, reemplaza sus materiales (vidrio con transmission real, ver comentario del módulo)
  * y agrega la etiqueta, y mide la caja del resultado para poder calibrarlo contra layout.js sin
@@ -307,6 +332,10 @@ function loadMasterModel() {
           metalness: 1,
           roughness: isNozzle ? 0.2 : 0.24,
           envMapIntensity: 1.5,
+          // La tapa es un cilindro liso: simétrico respecto de su eje, con un environment fijo se
+          // ve idéntica a cualquier ángulo y parece que no gira. El estriado rompe esa simetría.
+          bumpMap: isNozzle ? null : getCapFlutesTexture(),
+          bumpScale: 2,
         });
       } else if (obj.name === 'Tube_EXPORT' || materialName === 'Material.002') {
         obj.material = new THREE.MeshStandardMaterial({

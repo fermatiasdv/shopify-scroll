@@ -20,7 +20,8 @@
 
 {%- liquid
   assign label_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecstasy,epicurean,london_legend' | split: ','
-  assign first_background = 'scroll-bg-1.jpg' | asset_url
+  # Pool de fondos BG1..BG15.png: cada transición sortea uno distinto (ver pickRandomBackground en scroll-styles.js).
+  assign first_background = 'BG1.png' | asset_url
   # 3 variantes de imagen de ingrediente por fragancia (scroll-ingredient-<slug sin _>-<n>.webp);
   # scroll-content.js/styles.js sortean una cada vez que el ingrediente pasa a visible.
   assign ingredient_slugs = 'rebellious,wonder_of_the_world,painkiller,jagged_edge,glitterati,forbidden_flower,crimson_desert,ecstasy,epicurean,london_legend' | split: ','
@@ -38,10 +39,10 @@
         {%- endfor %}
       },
       "backgrounds": [
-        {{ first_background | json }},
-        {{ 'scroll-bg-2.webp' | asset_url | json }},
-        {{ 'scroll-bg-3.webp' | asset_url | json }},
-        {{ 'scroll-bg-4.webp' | asset_url | json }}
+        {%- for n in (1..15) -%}
+          {%- assign background_file = 'BG' | append: n | append: '.png' -%}
+          {{ background_file | asset_url | json }}{% unless forloop.last %}, {% endunless %}
+        {%- endfor -%}
       ],
       "ingredients": {
         {%- for slug in ingredient_slugs -%}
