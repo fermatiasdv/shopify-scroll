@@ -88,6 +88,12 @@ const BUY_BUTTON_OFFSET_PX = 20;
 const BUY_BUTTON_GAP_FRACTION = 0.65;
 
 /**
+ * Corrimiento final (px) hacia abajo del botón "Buy it", aplicado DESPUÉS del tope contra la lista:
+ * en la práctica ese tope siempre gana, así que BUY_BUTTON_OFFSET_PX sola no lo mueve.
+ */
+const BUY_BUTTON_NUDGE_PX = 40;
+
+/**
  * Vuelca a variables CSS los valores de configuración que necesita la hoja de estilos.
  * @param {object} config - Objeto de configuración (CONFIG).
  * @param {number} boxCount - Cantidad de pantallas que debe ocupar el grupo de fragancias ahora
@@ -111,7 +117,7 @@ export function applyCssVariables(config, boxCount) {
   const buyButtonY = Math.min(
     bottleBottom + (layout.panel.listTop - bottleBottom) * BUY_BUTTON_GAP_FRACTION + BUY_BUTTON_OFFSET_PX,
     layout.panel.listTop - BUY_BUTTON_CLEARANCE_PX,
-  );
+  ) + BUY_BUTTON_NUDGE_PX;
   root.setProperty('--fragrance-scroll-buy-button-y', `${Math.round(buyButtonY)}px`);
 }
 
