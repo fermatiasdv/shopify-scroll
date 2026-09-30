@@ -25,6 +25,8 @@
   # 3 variantes de imagen de ingrediente por fragancia (scroll-ingredient-<slug sin _>-<n>.webp);
   # scroll-content.js/styles.js sortean una cada vez que el ingrediente pasa a visible.
   assign ingredient_slugs = 'rebellious,wonder_of_the_world,painkiller,jagged_edge,glitterati,forbidden_flower,crimson_desert,ecstasy,epicurean,london_legend' | split: ','
+  # Imagen estática de la botella de frente: el estado colapsado la muestra en vez de montar el 3D.
+  assign poster_slugs = 'rebellious,forbidden_flower,wonder_of_the_world,jagged_edge,crimson_desert,glitterati,ecstasy,epicurean,london_legend,painkiller' | split: ','
 -%}
 
 <fragrance-scroll class="fragrance-scroll">
@@ -44,6 +46,13 @@
           {{ background_file | asset_url | json }}{% unless forloop.last %}, {% endunless %}
         {%- endfor -%}
       ],
+      "posters": {
+        {%- for slug in poster_slugs -%}
+          {%- assign poster_file = slug | remove: '_' | prepend: 'scroll-poster-' | append: '.webp' -%}
+          {%- unless forloop.first %},{% endunless %}
+          {{ slug | json }}: {{ poster_file | asset_url | json }}
+        {%- endfor %}
+      },
       "ingredients": {
         {%- for slug in ingredient_slugs -%}
           {%- assign ingredient_prefix = slug | remove: '_' | prepend: 'scroll-ingredient-' -%}
@@ -62,7 +71,38 @@
   <div
     class="fragrance-scroll__container"
     style="background-image: url('{{ first_background }}');"
-  ></div>
+  >
+    <div class="fragrance-scroll__ssr">
+      <div
+        class="fragrance-scroll__ssr-overlay"
+        aria-hidden="true"
+      ></div>
+      {%- assign first_poster = poster_slugs.first | remove: '_' | prepend: 'scroll-poster-' | append: '.webp' | asset_url -%}
+      <img
+        class="fragrance-scroll__poster-img"
+        src="{{ first_poster }}"
+        alt=""
+        width="1024"
+        height="1024"
+        fetchpriority="high"
+        decoding="async"
+        draggable="false"
+      >
+      <script>
+        (function () {
+          var slug = new URLSearchParams(location.search).get('fragrance');
+          if (!slug) return;
+          var posters = {
+            {%- for slug in poster_slugs -%}
+              {%- assign poster_file = slug | remove: '_' | prepend: 'scroll-poster-' | append: '.webp' -%}
+              {{ slug | json }}: {{ poster_file | asset_url | json }}{% unless forloop.last %},{% endunless %}
+            {%- endfor -%}
+          };
+          if (posters[slug]) document.currentScript.previousElementSibling.src = posters[slug];
+        })();
+      </script>
+    </div>
+  </div>
 
   <div class="fragrances-overlay">
     <button
@@ -121,6 +161,141 @@
       >
         <span aria-hidden="true">&#10005;</span>
       </button>
+
+      <div
+        class="fragrances-drawer-body"
+        data-drawer-body
+      ></div>
+
+      {%- comment -%}
+        Un template por fragancia: el producto se busca por handle (slug con guiones, ej.
+        wonder-of-the-world). scroll-motor.js clona el de la fragancia visible dentro de
+        [data-drawer-body] al abrir el drawer.
+      {%- endcomment -%}
+      {%- for slug in poster_slugs -%}
+        {%- assign fragrance_handle = slug | replace: '_', '-' -%}
+        {%- assign fragrance_product = all_products[fragrance_handle] -%}
+        <template data-fragrance-product="{{ slug }}">
+          {%- if fragrance_product != blank -%}
+            {%- assign selected_variant = fragrance_product.selected_or_first_available_variant -%}
+            <div class="fragrances-product">
+              {%- if fragrance_product.featured_image -%}
+                <div class="fragrances-product__media">
+                  {{
+                    fragrance_product.featured_image
+                    | image_url: width: 800
+                    | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(min-width: 750px) 28rem, 100vw', alt: fragrance_product.featured_image.alt
+                  }}
+                </div>
+              {%- endif -%}
+
+              <h2 class="fragrances-product__title">{{ fragrance_product.title | escape }}</h2>
+
+              <p class="fragrances-product__price">
+                <span data-product-price>{{ selected_variant.price | money }}</span>
+                {%- if selected_variant.compare_at_price > selected_variant.price -%}
+                  <s data-product-compare-price>{{ selected_variant.compare_at_price | money }}</s>
+                {%- endif -%}
+              </p>
+
+              {%- if fragrance_product.description != blank -%}
+                <div class="fragrances-product__description">
+                  {{ fragrance_product.description | strip_html | truncatewords: 40 }}
+                </div>
+              {%- endif -%}
+
+              <form
+                class="fragrances-product__form"
+                method="post"
+                action="{{ routes.cart_add_url }}"
+                data-fragrance-form
+                data-adding-text="{{ 'products.product.adding_to_cart' | t | escape }}"
+                data-added-text="{{ 'products.product.added_to_cart' | t | escape }}"
+                data-error-text="{{ 'products.product.add_to_cart_error' | t | escape }}"
+              >
+                {%- if fragrance_product.has_only_default_variant -%}
+                  <input
+                    type="hidden"
+                    name="id"
+                    value="{{ selected_variant.id }}"
+                  >
+                {%- else -%}
+                  <label class="fragrances-product__field">
+                    <span>{{ fragrance_product.options_with_values.first.name | escape }}</span>
+                    <select
+                      name="id"
+                      data-variant-select
+                    >
+                      {%- for variant in fragrance_product.variants -%}
+                        <option
+                          value="{{ variant.id }}"
+                          data-price="{{ variant.price | money }}"
+                          {% if variant.compare_at_price > variant.price %}
+                            data-compare-price="{{ variant.compare_at_price | money }}"
+                          {% endif %}
+                          {% if variant == selected_variant %}
+                            selected
+                          {% endif %}
+                          {% unless variant.available %}
+                            disabled
+                          {% endunless %}
+                        >
+                          {{- variant.title | escape }}
+                          {%- unless variant.available %} - {{ 'products.product.sold_out' | t }}{% endunless -%}
+                        </option>
+                      {%- endfor -%}
+                    </select>
+                  </label>
+                {%- endif -%}
+
+                <label class="fragrances-product__field">
+                  <span>{{ 'products.product.quantity' | t }}</span>
+                  <input
+                    type="number"
+                    name="quantity"
+                    value="1"
+                    min="1"
+                    inputmode="numeric"
+                  >
+                </label>
+
+                <button
+                  type="submit"
+                  class="fragrances-product__submit"
+                  {% unless selected_variant.available %}
+                    disabled
+                  {% endunless %}
+                >
+                  {%- if selected_variant.available -%}
+                    {{ 'actions.add_to_cart' | t }}
+                  {%- else -%}
+                    {{ 'products.product.sold_out' | t }}
+                  {%- endif -%}
+                </button>
+
+                <p
+                  class="fragrances-product__status"
+                  role="status"
+                  data-fragrance-status
+                ></p>
+              </form>
+
+              <div class="fragrances-product__links">
+                <a
+                  href="{{ routes.cart_url }}"
+                  data-cart-link
+                  hidden
+                >
+                  {{ 'content.view_cart' | t }}
+                </a>
+                <a href="{{ fragrance_product.url }}">{{ 'actions.view_full_details' | t }}</a>
+              </div>
+            </div>
+          {%- else -%}
+            <p class="fragrances-product__unavailable">{{ 'actions.product_unavailable' | t }}</p>
+          {%- endif -%}
+        </template>
+      {%- endfor -%}
     </aside>
   </div>
 </fragrance-scroll>
@@ -158,6 +333,59 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
+  }
+
+  .fragrance-scroll__ssr {
+    --side: round(clamp(6px, calc(100cqw * 0.03), 64px), 1px);
+    --title-font: round(min(clamp(20px, calc(100cqw * 0.062), 40px), calc((100cqw - 2 * var(--side)) / 9.8)), 1px);
+    --list-extra: 28px;
+    --height-fraction: 1;
+    --mobile-scale: 0.9;
+    --title-line: round(calc(var(--title-font) * 1.3), 1px);
+    --ingredient-font: round(calc(var(--title-font) * 0.72), 1px);
+    --ingredient-line: round(calc(var(--ingredient-font) * 1.45), 1px);
+    --stage-half: calc(
+      min(
+        50cqh - var(--side) - var(--title-line),
+        50cqh - var(--side) - var(--list-extra) - 3 * var(--ingredient-line)
+      ) - 16px
+    );
+    --poster-size: round(
+      calc(min(100cqh * var(--height-fraction), 2 * var(--stage-half)) / 0.984 * var(--mobile-scale)),
+      1px
+    );
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    container-type: size;
+  }
+
+  @media (orientation: landscape) {
+    .fragrance-scroll__ssr {
+      --side: round(clamp(16px, calc(100cqw * 0.045), 64px), 1px);
+      --title-font: round(min(clamp(20px, calc(100cqw * 0.02), 40px), calc((100cqw - 2 * var(--side)) / 9.8)), 1px);
+      --list-extra: 0px;
+      --height-fraction: 2;
+      --mobile-scale: 1;
+    }
+  }
+
+  .fragrance-scroll__ssr-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .fragrance-scroll__poster-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--poster-size);
+    height: var(--poster-size);
+    max-width: none;
+    transform: translate(-50%, -50%);
   }
 
   .fragrance-scroll-stage {
@@ -358,7 +586,7 @@
 
   .fragrance-scroll-stage .fragrances-buy-button {
     position: absolute;
-    bottom: 8vh;
+    top: var(--fragrance-scroll-buy-button-y, 80%);
     left: 50%;
     z-index: 20;
     display: inline-flex;
@@ -376,7 +604,7 @@
     letter-spacing: 0.03em;
     cursor: pointer;
     pointer-events: auto;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
   }
 
   .fragrance-scroll-stage .fragrances-drawer-root {
@@ -446,6 +674,107 @@
     font-size: 1.1rem;
     line-height: 1;
     cursor: pointer;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-body {
+    padding: 4rem 1.5rem 2rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__media img {
+    display: block;
+    width: 100%;
+    max-height: 22rem;
+    object-fit: contain;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__price {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__price s {
+    margin-left: 0.5rem;
+    opacity: 0.55;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__description {
+    font-size: 1.1rem;
+    line-height: 1.4;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 1rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__field :is(select, input) {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid rgb(26 15 8 / 0.3);
+    border-radius: 0.5rem;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__submit {
+    margin: 0;
+    padding: 0.9rem 1.6rem;
+    border: none;
+    border-radius: 999px;
+    background: #1a0f08;
+    color: #fff;
+    font: inherit;
+    font-size: 1.1rem;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__status {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    font-size: 1rem;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__links a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  .fragrance-scroll-stage .fragrances-product__links a[hidden] {
+    display: none;
   }
 
   @media screen and (min-width: 750px) {

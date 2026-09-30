@@ -373,6 +373,15 @@ function getMasterModel() {
   return masterModelPromise;
 }
 
+/**
+ * Empieza (o reusa) la descarga del GLB sin crear ninguna botella. La usa styles.js (loadBottleModule)
+ * para que, cuando el 3D reemplaza al poster, el modelo ya esté listo.
+ * @returns {Promise<unknown>}
+ */
+export function preloadBottleModel() {
+  return getMasterModel();
+}
+
 // ---------------------------------------------------------------------------
 // Reuso de renderer/environment por <canvas> (rendimiento)
 // ---------------------------------------------------------------------------

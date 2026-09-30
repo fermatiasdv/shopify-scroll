@@ -44,6 +44,8 @@ import {
   disposeCollapsedEntry,
   renderCollapsedEntry,
   mountStageNodes,
+  loadBottleModule,
+  adoptServerPoster,
   disposeAll,
 } from '@scroll/styles';
 import { ASSETS, loadAssets } from '@scroll/assets';
@@ -643,6 +645,7 @@ export function init(root) {
   if (requestedIndex !== null) currentIndex = requestedIndex;
   preloadImages(CONFIG.content, currentIndex, [...Object.values(ASSETS.labels), ...ASSETS.backgrounds]);
 
+  adoptServerPoster(root);
   setAnimationsEnabled(animationsEnabled);
 
   if (requestedIndex !== null) {
@@ -674,9 +677,29 @@ export function init(root) {
   // caja colapsada que lo contiene (ver onCollapsedBoxClick en buildBoxes), que despliega igual.
   // La ✕ vive en un nodo que destroy() saca del DOM, así que su listener se va con él.
   closeButton?.addEventListener('click', onCloseClick);
+  // Primero se pinta el poster (liviano); recién después, en un momento ocioso y sin que nadie haya
+  // tocado "Show fragrances", se descarga el 3D (three.js + GLB) para que el despliegue sea inmediato.
+  // Si el usuario toca el botón antes, onShowClick reusa esta misma carga.
+  const prefetchBottle = () => loadBottleModule().catch(() => {});
+  const scheduleBottlePrefetch = () => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(prefetchBottle, { timeout: 3000 });
+    else window.setTimeout(prefetchBottle, 500);
+  };
+  // Espera a que el poster esté cargado y decodificado: así nunca compite con él por el ancho de banda.
+  const posterImg = root.ownerDocument.querySelector('.fragrance-scroll__container .display-image-product img');
+  if (posterImg) {
+    Promise.race([
+      posterImg.decode().catch(() => {}),
+      new Promise((resolve) => window.setTimeout(resolve, 2000)),
+    ]).then(scheduleBottlePrefetch);
+  } else {
+    scheduleBottlePrefetch();
+  }
   buyButton?.addEventListener('click', openBuyDrawer);
   drawerRootEl?.querySelector('.fragrances-drawer-close')?.addEventListener('click', closeBuyDrawer);
   drawerRootEl?.querySelector('.fragrances-drawer-backdrop')?.addEventListener('click', closeBuyDrawer);
+  drawerRootEl?.addEventListener('submit', onDrawerSubmit);
+  drawerRootEl?.addEventListener('change', onDrawerChange);
 
   window.addEventListener('resize', onResize);
   window.addEventListener('wheel', onWheel, { passive: false });
@@ -731,8 +754,23 @@ export function destroy(root) {
   touchHandled = false;
 }
 
+/** true mientras se descarga el módulo 3D tras el click en "Show fragrances" (evita clicks repetidos). */
+let isLoadingBottle = false;
+
 /** Botón "Show fragancies": ver el comentario de los botones en init(). */
-function onShowClick() {
+async function onShowClick() {
+  if (isLoadingBottle) return;
+  isLoadingBottle = true;
+  // Mientras se descarga el 3D (three.js + GLB) el grupo sigue colapsado mostrando el poster.
+  try {
+    await loadBottleModule();
+  } catch (error) {
+    console.error('fragrance-scroll: no se pudo cargar el modelo 3D', error);
+    return;
+  } finally {
+    isLoadingBottle = false;
+  }
+  if (!rootEl || animationsEnabled) return;
   setAnimationsEnabled(true);
   updateUrlForIndex(currentIndex);
   scrollToTop(boxTops[currentIndex]);
@@ -757,6 +795,65 @@ const DRAWER_TRANSITION_MS = 300;
 let drawerHideTimer = null;
 
 /**
+ * Clona en el drawer el template de la fragancia visible (ver `<template data-fragrance-product>`
+ * en la sección: datos del producto de Shopify + formulario de compra).
+ */
+function renderDrawerProduct() {
+  const body = drawerRootEl?.querySelector('[data-drawer-body]');
+  if (!body) return;
+  const slug = pageSlugs[currentIndex];
+  const template = [...drawerRootEl.querySelectorAll('template[data-fragrance-product]')]
+    .find((el) => el.dataset.fragranceProduct === slug);
+  body.replaceChildren(template ? template.content.cloneNode(true) : []);
+}
+
+/** Cambio de variante: actualiza el precio mostrado. */
+function onDrawerChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement) || !select.matches('[data-variant-select]')) return;
+  const option = select.selectedOptions[0];
+  const product = select.closest('.fragrances-product');
+  const price = product?.querySelector('[data-product-price]');
+  if (price && option?.dataset.price) price.textContent = option.dataset.price;
+  const compare = product?.querySelector('[data-product-compare-price]');
+  if (compare) {
+    compare.textContent = option?.dataset.comparePrice ?? '';
+    compare.hidden = !option?.dataset.comparePrice;
+  }
+}
+
+/** Submit del formulario del drawer: agrega la variante elegida al carrito vía la Cart AJAX API. */
+async function onDrawerSubmit(event) {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement) || !form.matches('[data-fragrance-form]')) return;
+  event.preventDefault();
+  const status = form.querySelector('[data-fragrance-status]');
+  const submit = form.querySelector('button[type="submit"]');
+  const cartLink = form.parentElement?.querySelector('[data-cart-link]');
+  const data = new FormData(form);
+  if (status) status.textContent = form.dataset.addingText ?? '';
+  if (submit) submit.disabled = true;
+  try {
+    const response = await fetch(`${form.action}.js`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ id: Number(data.get('id')), quantity: Number(data.get('quantity')) || 1 }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.description ?? result.message ?? 'cart add failed');
+    if (status) status.textContent = form.dataset.addedText ?? '';
+    if (cartLink) cartLink.hidden = false;
+  } catch (error) {
+    console.error('fragrance-scroll: no se pudo agregar al carrito', error);
+    if (status) status.textContent = error instanceof Error && error.message !== 'cart add failed'
+      ? error.message
+      : form.dataset.errorText ?? '';
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+/**
  * Abre el drawer de compra (pantalla completa en mobile, panel por la derecha en desktop, ver el CSS
  * de la sección). El foco va con `preventScroll`: sin eso el navegador scrollea el stage (overflow
  * hidden igual es scrolleable por código) para mostrar el panel, que arranca fuera de pantalla, y
@@ -764,6 +861,7 @@ let drawerHideTimer = null;
  */
 function openBuyDrawer() {
   if (!drawerRootEl) return;
+  renderDrawerProduct();
   window.clearTimeout(drawerHideTimer);
   drawerRootEl.hidden = false;
   drawerRootEl.getBoundingClientRect(); // fuerza el layout para que la transición arranque

@@ -78,6 +78,15 @@ export function validateContent(content) {
   });
 }
 
+/** Distancia mínima (px) entre el centro del botón "Buy it" y el borde superior de la lista de ingredientes. */
+const BUY_BUTTON_CLEARANCE_PX = 12;
+
+/** Desplazamiento extra (px) hacia abajo del botón "Buy it" respecto de BUY_BUTTON_GAP_FRACTION. */
+const BUY_BUTTON_OFFSET_PX = 20;
+
+/** Fracción del hueco botella→lista donde va el centro del botón (0.5 = justo al medio, más alto = más abajo). */
+const BUY_BUTTON_GAP_FRACTION = 0.65;
+
 /**
  * Vuelca a variables CSS los valores de configuración que necesita la hoja de estilos.
  * @param {object} config - Objeto de configuración (CONFIG).
@@ -96,6 +105,14 @@ export function applyCssVariables(config, boxCount) {
   root.setProperty('--fragrance-scroll-title-font-size', `${layout.titleFontSizePx}px`);
   root.setProperty('--fragrance-scroll-ingredient-font-size', `${layout.ingredientFontSizePx}px`);
   root.setProperty('--fragrance-scroll-word-fade-ms', `${config.wordFadeMs}ms`);
+  // Centro vertical del botón "Buy it": a mitad de camino entre el pie de la botella y la lista de
+  // ingredientes, sin pasarse de la lista (la botella puede desbordar el stage en modo 'column').
+  const bottleBottom = layout.cy + layout.product.halfH;
+  const buyButtonY = Math.min(
+    bottleBottom + (layout.panel.listTop - bottleBottom) * BUY_BUTTON_GAP_FRACTION + BUY_BUTTON_OFFSET_PX,
+    layout.panel.listTop - BUY_BUTTON_CLEARANCE_PX,
+  );
+  root.setProperty('--fragrance-scroll-buy-button-y', `${Math.round(buyButtonY)}px`);
 }
 
 /**
@@ -112,6 +129,7 @@ const CSS_VARIABLES = [
   '--fragrance-scroll-title-font-size',
   '--fragrance-scroll-ingredient-font-size',
   '--fragrance-scroll-word-fade-ms',
+  '--fragrance-scroll-buy-button-y',
 ];
 
 /** Borra de `<html>` las variables que escribió `applyCssVariables` (ver destroy en motor.js). */

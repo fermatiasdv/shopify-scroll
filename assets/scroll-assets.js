@@ -14,6 +14,7 @@
  *   model: string,
  *   labels: Record<string, string>,
  *   backgrounds: string[],
+ *   posters: Record<string, string>,
  *   ingredients: Record<string, string[]>,
  * }}
  * `labels.default` es la etiqueta de toda fragancia sin entrada propia (Painkiller, ver bottle.js).
@@ -24,6 +25,7 @@ export const ASSETS = {
   model: '',
   labels: {},
   backgrounds: [],
+  posters: {},
   ingredients: {},
 };
 

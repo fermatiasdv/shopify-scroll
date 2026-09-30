@@ -86,6 +86,9 @@
     "close": "Close",
     // Button on the fragrance scroll section that opens the purchase drawer
     "buy_it": "Buy it me",
+    // Links and fallback text inside the fragrance scroll purchase drawer
+    "view_full_details": "View full details",
+    "product_unavailable": "This fragrance isn't available for purchase yet.",
     "open": "Open",
     // Continue shopping link on the cart page which takes the user back to a collection page
     "continue_shopping": "Continue shopping",

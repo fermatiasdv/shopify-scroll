@@ -1,8 +1,31 @@
 import { CONFIG, GROW_MAX, FRAGRANCE_QUERY_PARAM } from '@scroll/config';
 import { getItemPhaseBehavior } from '@scroll/helpers';
 import { PRODUCT_CONTENT_X, PRODUCT_CONTENT_Y } from '@scroll/layout';
-import { createBottle, releaseCanvasRenderer } from '@scroll/bottle';
 import { ASSETS } from '@scroll/assets';
+
+/** Módulo de la botella 3D (three.js + GLB), cargado recién al desplegar el grupo, o null si todavía no. */
+let bottleModule = null;
+let bottleModulePromise = null;
+
+/**
+ * Descarga el módulo de la botella (three.js incluido) y el GLB, y resuelve cuando ya se puede crear
+ * una botella sin esperas. Mientras no resuelva, el estado colapsado sigue mostrando el poster
+ * (ver createPosterProductElement). Idempotente: todas las llamadas comparten la misma carga.
+ * @returns {Promise<void>}
+ */
+export function loadBottleModule() {
+  if (!bottleModulePromise) {
+    bottleModulePromise = import('@scroll/bottle')
+      .then((module) => module.preloadBottleModel().then(() => {
+        bottleModule = module;
+      }))
+      .catch((error) => {
+        bottleModulePromise = null;
+        throw error;
+      });
+  }
+  return bottleModulePromise;
+}
 
 let displayLayer = null;
 let currentDisplayEls = [];
@@ -758,7 +781,7 @@ function createProductLinkedCanvas(item) {
 function createProductCanvasElement(item, onSpinComplete, spinOverrides) {
   const { wrapper, canvas } = createProductLinkedCanvas(item);
   if ('size' in item) {
-    wrapper.__bottle = createBottle(canvas, {
+    wrapper.__bottle = bottleModule.createBottle(canvas, {
       size: Math.round(item.size),
       height: PRODUCT_CONTENT_Y * 2,
       maxRadius: PRODUCT_CONTENT_X,
@@ -782,9 +805,10 @@ function createProductCanvasElement(item, onSpinComplete, spinOverrides) {
  * @param {object} item - Item del producto (isProduct: true).
  */
 function createStaticProductCanvasElement(item) {
+  if (!bottleModule) return createPosterProductElement(item);
   const { wrapper, canvas } = createProductLinkedCanvas(item);
   if ('size' in item) {
-    wrapper.__bottle = createBottle(canvas, {
+    wrapper.__bottle = bottleModule.createBottle(canvas, {
       size: Math.round(item.size),
       height: PRODUCT_CONTENT_Y * 2,
       maxRadius: PRODUCT_CONTENT_X,
@@ -792,6 +816,72 @@ function createStaticProductCanvasElement(item) {
       fragranceSlug: item.fragranceSlug,
     });
     wrapper.__bottle.setYaw(0);
+  }
+  const zIndex = stackOrder(item);
+  if (zIndex) wrapper.style.zIndex = String(zIndex);
+  return wrapper;
+}
+
+/** `<img>` del poster que ya vino en el HTML de la sección (ver adoptServerPoster), o null. */
+let serverPosterImg = null;
+
+/**
+ * Guarda el `<img>` del poster que la sección renderiza en Liquid, para que el estado colapsado
+ * reuse ESE nodo (ya descargado y pintado) en vez de crear otro: sin demora y sin parpadeo. La
+ * llama init() (motor.js) antes de construir el grupo, que vacía el contenedor donde vive.
+ * @param {HTMLElement} root - Raíz de la sección.
+ */
+export function adoptServerPoster(root) {
+  serverPosterImg = root.querySelector('.fragrance-scroll__poster-img');
+}
+
+/**
+ * Devuelve (una sola vez) el poster del HTML si es el de `posterUrl`; si no, null.
+ * @param {string} [posterUrl]
+ */
+function takeServerPoster(posterUrl) {
+  const img = serverPosterImg;
+  if (!img || !posterUrl || img.src !== new URL(posterUrl, window.location.href).href) return null;
+  serverPosterImg = null;
+  return img;
+}
+
+/**
+ * Botella del estado colapsado: el poster (PNG/WebP de la botella de frente, mismo encuadre que el
+ * canvas de createBottle) en un link idéntico al de createProductLinkedCanvas. Así la carga inicial
+ * no descarga el GLB ni crea contexto WebGL; el 3D recién se monta al desplegar el grupo. Si la
+ * fragancia no tiene poster, el link queda vacío.
+ * @param {object} item - Item del producto (isProduct: true).
+ */
+function createPosterProductElement(item) {
+  const posterUrl = ASSETS.posters?.[item.fragranceSlug];
+  const serverImg = takeServerPoster(posterUrl);
+
+  const wrapper = document.createElement('a');
+  wrapper.className = 'display-item display-image display-image-product';
+  wrapper.href = bottleLinkHref(item);
+  wrapper.target = '_blank';
+  wrapper.rel = 'noopener noreferrer';
+  wrapper.setAttribute('aria-label', item.fragranceName || '');
+
+  if (posterUrl) {
+    const img = serverImg || document.createElement('img');
+    img.className = '';
+    if (!serverImg) img.src = posterUrl;
+    img.alt = '';
+    img.decoding = 'async';
+    img.draggable = false;
+    img.style.display = 'block';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.maxWidth = 'none';
+    img.style.maxHeight = 'none';
+    wrapper.appendChild(img);
+  }
+
+  if ('size' in item) {
+    wrapper.style.width = `${item.size}px`;
+    wrapper.style.height = `${item.size}px`;
   }
   const zIndex = stackOrder(item);
   if (zIndex) wrapper.style.zIndex = String(zIndex);
@@ -901,7 +991,7 @@ export function prewarmIncomingProduct(display) {
   const zIndex = stackOrder(item);
   if (zIndex) el.style.zIndex = String(zIndex);
 
-  el.__bottle = createBottle(canvas, {
+  el.__bottle = bottleModule.createBottle(canvas, {
     size: Math.round(item.size),
     height: PRODUCT_CONTENT_Y * 2,
     maxRadius: PRODUCT_CONTENT_X,
@@ -1043,9 +1133,10 @@ export function disposeCollapsedEntry() {
  * después sobre el markup nuevo.
  */
 export function disposeAll() {
+  serverPosterImg = null;
   disposeDisplay();
   disposeCollapsedEntry();
-  productCanvasPool.splice(0).forEach(releaseCanvasRenderer);
+  if (bottleModule) productCanvasPool.splice(0).forEach(bottleModule.releaseCanvasRenderer);
   stageEl?.remove();
   stageEl = null;
   displayLayer = null;
@@ -1135,7 +1226,7 @@ export function renderCollapsedEntry(box, entry) {
 
   entry.display.forEach((item) => {
     if (isIngredientItem(item)) return;
-    const el = item.isProduct ? createStaticProductCanvasElement(item) : createDisplayElement(item);
+    const el = item.isProduct ? createPosterProductElement(item) : createDisplayElement(item);
     positionDisplayEl(el, item);
     applyDisplayState(el, item, visibleState(item, entry.animation), rotationAngle(item));
     revealWords(el);
