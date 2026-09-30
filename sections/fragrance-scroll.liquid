@@ -90,6 +90,39 @@
   >
     <span aria-hidden="true">&#10005;</span>
   </button>
+
+  <button
+    type="button"
+    class="fragrances-buy-button"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="fragrances-buy-drawer"
+  >
+    {{ 'actions.buy_it' | t }}
+  </button>
+
+  <div class="fragrances-drawer-root" hidden>
+    <div
+      class="fragrances-drawer-backdrop"
+      aria-hidden="true"
+    ></div>
+    <aside
+      id="fragrances-buy-drawer"
+      class="fragrances-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="{{ 'actions.buy_it' | t }}"
+      tabindex="-1"
+    >
+      <button
+        type="button"
+        class="fragrances-drawer-close"
+        aria-label="{{ 'actions.close' | t }}"
+      >
+        <span aria-hidden="true">&#10005;</span>
+      </button>
+    </aside>
+  </div>
 </fragrance-scroll>
 
 {% stylesheet %}
@@ -316,6 +349,116 @@
     line-height: 1;
     cursor: pointer;
     pointer-events: auto;
+  }
+
+  .fragrances-buy-button,
+  .fragrances-drawer-root {
+    display: none;
+  }
+
+  .fragrance-scroll-stage .fragrances-buy-button {
+    position: absolute;
+    bottom: 8vh;
+    left: 50%;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0.9rem 1.6rem;
+    border: none;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.75);
+    color: #fff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    pointer-events: auto;
+    transform: translateX(-50%);
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-root {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    overflow: clip;
+    contain: layout paint;
+    pointer-events: none;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-root[hidden] {
+    display: none;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    will-change: opacity;
+    pointer-events: auto;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    background: #fff;
+    color: #1a0f08;
+    font-family: 'Cormorant Garamond', serif;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+    transform: translate3d(100%, 0, 0);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-root.is-open .fragrances-drawer-backdrop {
+    opacity: 1;
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-root.is-open .fragrances-drawer {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .fragrance-scroll-stage .fragrances-drawer-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.75);
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  @media screen and (min-width: 750px) {
+    .fragrance-scroll-stage .fragrances-drawer {
+      width: min(28rem, 100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fragrance-scroll-stage .fragrances-drawer,
+    .fragrance-scroll-stage .fragrances-drawer-backdrop {
+      transition: none;
+    }
   }
 
   html.fragrance-scroll-animated .fragrance-scroll .fragrances-overlay,

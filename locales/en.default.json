@@ -84,6 +84,8 @@
     // Button to remove all applied product filters
     "clear_all": "Clear all",
     "close": "Close",
+    // Button on the fragrance scroll section that opens the purchase drawer
+    "buy_it": "Buy it me",
     "open": "Open",
     // Continue shopping link on the cart page which takes the user back to a collection page
     "continue_shopping": "Continue shopping",

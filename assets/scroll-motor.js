@@ -69,7 +69,7 @@ function isForeignInteraction(e) {
   if (document.documentElement.hasAttribute('scroll-lock')) return true;
   const target = e.target;
   if (!(target instanceof Element)) return false;
-  return Boolean(target.closest('dialog, input, textarea, select, [contenteditable=""], [contenteditable="true"]'));
+  return Boolean(target.closest('dialog, .fragrances-drawer-root, input, textarea, select, [contenteditable=""], [contenteditable="true"]'));
 }
 
 /**
@@ -476,6 +476,7 @@ function syncPocLayersVisibility() {
  * @param {number} [extraScroll] - Px a sumar a `boxTops[0]` (el delta del evento que lo disparó).
  */
 function collapseToFreeScroll(extraScroll = 0) {
+  closeBuyDrawer();
   isLocked = false;
   queuedExitDirection = null;
   pendingIndex = null;
@@ -634,7 +635,9 @@ export function init(root) {
   pageSlugs = buildPageSlugs(CONFIG.content);
 
   const closeButton = root.querySelector('.fragrances-close-button');
-  mountStageNodes([root.querySelector('.background-overlay'), closeButton]);
+  const buyButton = root.querySelector('.fragrances-buy-button');
+  drawerRootEl = root.querySelector('.fragrances-drawer-root');
+  mountStageNodes([root.querySelector('.background-overlay'), closeButton, buyButton, drawerRootEl]);
 
   const requestedIndex = getIndexFromUrl();
   if (requestedIndex !== null) currentIndex = requestedIndex;
@@ -671,6 +674,9 @@ export function init(root) {
   // caja colapsada que lo contiene (ver onCollapsedBoxClick en buildBoxes), que despliega igual.
   // La ✕ vive en un nodo que destroy() saca del DOM, así que su listener se va con él.
   closeButton?.addEventListener('click', onCloseClick);
+  buyButton?.addEventListener('click', openBuyDrawer);
+  drawerRootEl?.querySelector('.fragrances-drawer-close')?.addEventListener('click', closeBuyDrawer);
+  drawerRootEl?.querySelector('.fragrances-drawer-backdrop')?.addEventListener('click', closeBuyDrawer);
 
   window.addEventListener('resize', onResize);
   window.addEventListener('wheel', onWheel, { passive: false });
@@ -710,6 +716,7 @@ export function destroy(root) {
   clearCssVariables();
 
   rootEl = null;
+  drawerRootEl = null;
   fragrancesOverlayEl = null;
   currentConfig = null;
   currentContent = null;
@@ -740,6 +747,41 @@ function onShowClick() {
 function onCollapsedBoxClick(event) {
   if (event.target instanceof Element && event.target.closest('a[href]')) return;
   onShowClick();
+}
+
+/** Raíz (backdrop + panel) del drawer de compra, o null. Vive en el stage fijo, ver init(). */
+let drawerRootEl = null;
+
+/** Duración (ms) de la transición del drawer; debe coincidir con el CSS de la sección. */
+const DRAWER_TRANSITION_MS = 300;
+let drawerHideTimer = null;
+
+/**
+ * Abre el drawer de compra (pantalla completa en mobile, panel por la derecha en desktop, ver el CSS
+ * de la sección). El foco va con `preventScroll`: sin eso el navegador scrollea el stage (overflow
+ * hidden igual es scrolleable por código) para mostrar el panel, que arranca fuera de pantalla, y
+ * arrastra el fondo con él.
+ */
+function openBuyDrawer() {
+  if (!drawerRootEl) return;
+  window.clearTimeout(drawerHideTimer);
+  drawerRootEl.hidden = false;
+  drawerRootEl.getBoundingClientRect(); // fuerza el layout para que la transición arranque
+  requestAnimationFrame(() => drawerRootEl?.classList.add('is-open'));
+  document.querySelector('.fragrances-buy-button')?.setAttribute('aria-expanded', 'true');
+  drawerRootEl.querySelector('.fragrances-drawer')?.focus({ preventScroll: true });
+}
+
+/** Cierra el drawer de compra (✕, backdrop, Escape o colapso del grupo); `hidden` recién al terminar la transición. */
+function closeBuyDrawer() {
+  if (!drawerRootEl || drawerRootEl.hidden) return;
+  const root = drawerRootEl;
+  root.classList.remove('is-open');
+  document.querySelector('.fragrances-buy-button')?.setAttribute('aria-expanded', 'false');
+  window.clearTimeout(drawerHideTimer);
+  drawerHideTimer = window.setTimeout(() => {
+    root.hidden = true;
+  }, DRAWER_TRANSITION_MS);
 }
 
 /** Botón ✕. Desde la ronda 13 la ✕ y la salida por un borde son literalmente lo mismo. */
@@ -824,6 +866,10 @@ function onWheel(e) {
 
 /** Teclado (en el POC era un listener anónimo registrado al importar). */
 function onKeyDown(e) {
+  if (e.key === 'Escape' && drawerRootEl && !drawerRootEl.hidden) {
+    closeBuyDrawer();
+    return;
+  }
   if (!NEXT_KEYS.includes(e.key) && !PREV_KEYS.includes(e.key)) return;
   if (isForeignInteraction(e)) return;
 

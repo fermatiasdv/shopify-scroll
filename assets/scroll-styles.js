@@ -383,8 +383,9 @@ export function setBackgroundInstant(entry) {
   ensureBackgroundLayer();
   const [current, next] = backgroundEls;
 
-  currentBackground = entry.bgImage;
-  applyBoxVisual(current, entry);
+  // Conserva el fondo sorteado que ya se ve (resize, reactivar la animación) en vez de volver al de la caja.
+  currentBackground = currentBackground ?? entry.bgImage;
+  applyBoxVisual(current, { ...entry, bgImage: currentBackground });
   [current, next].forEach((el) => {
     el.style.transition = 'none';
   });
@@ -1109,8 +1110,10 @@ function isIngredientItem(item) {
 export function renderCollapsedEntry(box, entry) {
   disposeCollapsedEntry();
 
-  if (entry.bgImage) {
-    box.style.backgroundImage = `url("${entry.bgImage}")`;
+  // El poster mantiene el fondo sorteado que se venía viendo al cancelar la animación (✕ o borde).
+  const bgImage = currentBackground ?? entry.bgImage;
+  if (bgImage) {
+    box.style.backgroundImage = `url("${bgImage}")`;
     box.style.backgroundSize = 'cover';
     box.style.backgroundPosition = 'center';
     box.style.backgroundRepeat = 'no-repeat';
